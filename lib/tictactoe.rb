@@ -26,17 +26,35 @@ $keymap = Hash.new
 
 class Array2D
   def initialize x, y
-    @val = Array.new(x) { |i| Array.new(y) { |j| 0 } }
+    @val = Array.new(x) { |i| Array.new(y) { |j| yield(i,j)  } }
   end
   
   def [](index)
     @val[index]
   end
   
-  def each
-    @val.each_with_index { |o, i| 
-      o.each_with_index { |p, j| yield(i,j,p) }
-    }
+  #  def each
+  #    @val.each_with_index { |o, i| 
+  #      o.each_with_index { |p, j| yield(i,j,p) }
+  #    }
+  #  end
+end
+
+class Mark
+  attr_reader :x, :y, :winner
+  attr_accessor :player 
+  
+  def initialize x, y
+    @x, @y = x, y
+    @player, @winner = 0
+  end
+  
+  def is_winner!
+    @winner = true
+  end
+  
+  def to_s
+    "|#{@x}-#{@y}--#{@player}|"
   end
 end
 
@@ -51,7 +69,7 @@ class TicTacToe
   # creating a new @field 
   # setting @player to 2, because it's flipped before a move
   def initialize
-    @field = Array2D.new(3,3)
+    @field = Array2D.new(3,3){|i,j| Mark.new(i,j) }
     @player = 2
   end
   
@@ -79,7 +97,10 @@ class TicTacToe
   # *one*:: character for fields occupied by player one
   # *two*:: same for player two
   def getPrintChar x,y, leer = nil, one = 'X', two = 'O'
-    case @field[x][y]
+    
+    return "@" if @field[x][y].winner
+    
+    case @field[x][y].player
     when 1 then one
     when 2 then two
     else
@@ -94,14 +115,16 @@ class TicTacToe
   # switch players, get a valid move and update the field according to the move
   def doMove x,y
     @player = @player == 1 ? 2 : 1
-    @field[x][y] = @player
+    @field[x][y].player = @player
+    
+    checkWinner.each { |item| item.is_winner! } unless checkWinner.nil?
   end
 
   # check if a move is valid, i.e. 1-9 on a unoccupied field, or 0 for ai move
   def isValidMove x,y
     return false unless (0..3) === x
     return false unless (0..3) === y
-    return @field[x][y] == 0
+    return @field[x][y].player == 0
   end	
 
   # get a move (from user) that is definitely valid
@@ -117,50 +140,68 @@ class TicTacToe
     end until isValidMove(x,y)
     return x,y
   end
-	
+
   # check if there is a winner
   # * returns nil for no winner
   # * returns 1 if player 1 wins
   # * returns 2 if player 2 wins
-  # if both players won, 1 is returned
+  # FIXME no longeer -- if both players won, 1 is returned
   def checkWinner thefield = @field
-    # beide spieler
-    for i in 1..2 do
-      # waagerecht
-      for d in 0..2 do
-        b = [i]
-        for t in 0..2 do
-          b << thefield[d][t]
+    checks = []
+    
+    d1 = []
+    d2 = []
+    (0..2).each { |a|
+      c1 = []
+      c2 = []
+      (0..2).each { |b|
+        c1 << thefield[a][b]
+        c2 << thefield[b][a]
+      }
+      checks << c1
+      checks << c2
+      
+      d1 << thefield[a][a]
+      d2 << thefield[a][2-a]
+    }
+    checks << d1
+    checks << d2
+    
+   # checks.each { |i| puts i;puts "---" }
+  #  puts "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    
+    
+    (1..2).each { |player|
+      checks.each { |c|
+        d = c.map { |item| item.player } << player
+        #puts c.to_s
+        if (d.uniq.length == 1 and 1..2 === d.first)
+#          c.each { |bla| bla.is_winner! }
+       #   puts "making winner!"
+        #  puts "winner is #{d.first}"
+          puts "winner made by"
+          puts c
+       #   puts "end winner made by"
+          return c #d.first 
         end
-        return i if b.uniq.length == 1
-      end
-      for d in 0..2 do
-        b = [i]
-        for t in 0..2 do
-          b << thefield[t][d]
-        end
-        return i if b.uniq.length == 1
-      end
-      # diagonal
-      return i if [i, thefield[0][0], thefield[1][1], thefield[2][2]].uniq.length == 1
-      return i if [i, thefield[0][2], thefield[1][1], thefield[2][0]].uniq.length == 1
-    end
+      }
+    }
     
     return nil
   end
   
   # returns true if the field is full
   def voll? 
-#    return false
-#    @field.all? { |x|  # TODO check if this works
-#      x != 0
-#    }
-  for x in 0..2
-    for y in 0..2
-      return false if @field[x][y] == 0
+    #    return false
+    #    @field.all? { |x|  # TODO check if this works
+    #      x != 0
+    #    }
+    for x in 0..2
+      for y in 0..2
+        return false if @field[x][y].player == 0
+      end
     end
-  end
-  return true
+    return true
   end
 
   # returns true if either the field is full or one player won the game
@@ -181,16 +222,16 @@ class TicTacToe
 
     while true
       tryx, tryy = rand(3), rand(3)
-      next unless @field[tryx][tryy] == 0
+      next unless @field[tryx][tryy].player == 0
 
-      field2[tryx][tryy] = @player
-      if checkWinner(field2) == @player then return tryx,tryy end
+      field2[tryx][tryy].player = @player
+      if checkWinner(field2) != nil and checkWinner(field2).first.player == @player then return tryx,tryy end
 
       other = @player == 1 ? 2 : 1
-      field2[tryx][tryy] = other
-      if checkWinner(field2) == other then if rand(10) > 1 then return tryx,tryy end end
+      field2[tryx][tryy].player = other
+      if checkWinner(field2) != nil and checkWinner(field2).first.player == other then if rand(10) > 1 then return tryx,tryy end end
 
-      field2[tryx][tryy] = 0
+      field2[tryx][tryy].player = 0
       if rand(10) > 8 then return tryx,tryy end
     end
   end

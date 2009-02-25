@@ -24,17 +24,21 @@
 require "sdl"
 require "opengl"
 
+def crand
+  0.5 * (1 + rand)
+end
+
 class Thing
   def initialize x, y, player=0
     @x = x
     @y = y
     
     if player == 1
-      @c1, @c2, @c3 = 0, rand, rand
+      @c1, @c2, @c3 = 0, crand, crand
     elsif player == 2
-      @c1, @c2, @c3 = rand, 0, 0
+      @c1, @c2, @c3 = crand, 0, 0
     else
-       @c1, @c2, @c3 = rand, rand, rand
+       @c1, @c2, @c3 = crand, crand, crand
     end
     
     
@@ -42,7 +46,8 @@ class Thing
     @r = rand
   end
   
-  attr_accessor :x, :y 
+  attr_accessor :x, :y
+  attr_accessor :stone
   
   def render
     @s = 30.0
@@ -62,8 +67,14 @@ class Thing
   end
   
   def tick
-    @o += 0.003
-    @r += 0.03
+    val = 0.003
+    unless @stone.nil?
+      val = 0.009 if @stone.winner
+    end
+  
+    
+    @o += val
+    @r += 10*val
   end
 end
 
@@ -78,30 +89,30 @@ def draw_gl_scene
     SDL::WM.setCaption "#{$fps} FPS", ""
   end
   
-  aXWINRES = XWINRES
-  aYWINRES = YWINRES
+  axres = XWINRES
+  ayres = YWINRES
   
   GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
-  GL::Viewport(0,0,aXWINRES,aYWINRES);
-  GL::Ortho(0,aXWINRES,0,aYWINRES,0,128);
+  GL::Viewport(0,0,axres,ayres);
+  GL::Ortho(0,axres,0,ayres,0,128);
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)  
     
   @m.tick
   @m.render
   
-    @t2.each { |t| 
-    t.tick; t.render 
-  }
+#    @t2.each { |t| 
+#    t.tick; t.render 
+#  }
 
   
-  aXWINRES = 400
-  aYWINRES = 400
+  axres = 400
+  ayres = 400
   
   #GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,XWINRES,XWINRES);
-  GL::Ortho(0,aXWINRES,0,aYWINRES,0,128);
+  GL::Ortho(0,axres,0,ayres,0,128);
   #GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)  
   
   @things.each { |t| 
@@ -125,15 +136,25 @@ def sdl_event event
       puts "aaa"
       $stdout.flush
       $running = false
-    elsif event.sym == 48
-      a,b=$game.kiGetMove; $game.doMove(a,b)
-      xx,yy=a,b
-      @things << Thing.new(50+xx*100,50+(2-yy)*100, $game.field[xx][yy])
+    elsif event.sym == 48 # TODO 48 sucks!
+      unless $game.gameover?
+        a,b=$game.kiGetMove; $game.doMove(a,b) # FIXME this can crash because it does not properly check
+        xx,yy=a,b
+        baaaaam = Thing.new(50+xx*100,50+(2-yy)*100, $game.field[xx][yy].player)
+        @things << baaaaam
+        baaaaam.stone = $game.field[xx][yy]
+        puts $game.to_s
+      end
+      
+      elsif event.sym == SDL::Key::SPACE
+        $game = TicTacToe.new
+        @things = []
+        puts $game.to_s
     else puts event.sym
     end
   elsif event.is_a?(SDL::Event2::MouseButtonDown)
-    @t2 << Thing.new(event.x, YWINRES-event.y) if event.button == SDL::Mouse::BUTTON_LEFT
-    @m.recolor if event.button == SDL::Mouse::BUTTON_RIGHT
+#    @t2 << Thing.new(event.x, YWINRES-event.y) if event.button == SDL::Mouse::BUTTON_LEFT
+#    @m.recolor if event.button == SDL::Mouse::BUTTON_RIGHT
   elsif event.is_a?(SDL::Event2::MouseMotion)
     @m.x = event.x
     @m.y = YWINRES-event.y
@@ -142,36 +163,17 @@ end
 
 require 'tictactoe'
 $game = TicTacToe.new
-4.times do a,b=$game.kiGetMove; $game.doMove(a,b) end
+#4.times do a,b=$game.kiGetMove; $game.doMove(a,b) end
 puts $game.to_s
 @m = Thing.new(200,200)#Thing.new(200,200)
 @things = []
-@t2 = []
+#@t2 = []
 
 
 
-for xx in 0..2 do
-  for yy in 0..2 do
-    @things << Thing.new(50+xx*100,50+(2-yy)*100, $game.field[xx][yy]) if $game.field[xx][yy] != 0
-  end
-end
-
-
-
-#@things = []
-
-#$game.field.each { |i| puts i; puts i.to_s }
-
-#0.upto 2 do |yy|
-#  0.upto 2 do |xx|
-#    unless $game.field[xx][2-yy] == 0
-#      puts "x is #{xx}"
-#      puts "y is #{yy}"
-# #     puts "value is #{$game.field[xx][yy]}"
-#      
-##      
-#      @things << Thing.new(50+yy*100,50+yy*100)
-#    end
+#for xxx in 0..2 do
+#  for yyy in 0..2 do
+#    @things << Thing.new(50+xxx*100,50+(2-yyy)*100, $game.field[xxx][yyy].player) if $game.field[xxx][yyy].player != 0
 #  end
 #end
 
