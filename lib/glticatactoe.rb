@@ -24,30 +24,53 @@
 require "sdl"
 require "opengl"
 
-def crand
-  0.5 * (1 + rand)
+require 'tictactoe'
+require 'glbase'
+
+class Float
+  def self.rand min, max
+    return min + Kernel.rand(0) * (max - min)
+  end
 end
 
-class Thing
-  def initialize x, y, player=0
-    @x = x
-    @y = y
-    
-    if player == 1
-      @c1, @c2, @c3 = 0, crand, crand
-    elsif player == 2
-      @c1, @c2, @c3 = crand, 0, 0
-    else
-       @c1, @c2, @c3 = crand, crand, crand
-    end
-    
-    
+class Color
+  attr_accessor :r, :g, :b
+  
+  def initialize r, g, b
+    @r, @g, @b = r, g, b
+  end
+  
+  def self.random r, b, g
+    return self.new(r * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8))
+  end
+  
+  def to_a
+    return [@r, @b, @g]
+  end
+end
+
+class Mark
+  alias_method :original, :initialize 
+  attr_accessor :gfx
+  
+  def initialize x, y
+    original(x, y)
+    @gfx = MarkGFX.new(50+x*100,50+(2-y)*100)
+    @gfx.mark = self
+    #    @things << baaaaam
+    #    baaaaam.stone = $game.field[x][y]
+  end
+end
+
+class Polygon
+  def initialize x, y
+    @x, @y = x, y
+   
     @o = rand
     @r = rand
   end
   
   attr_accessor :x, :y
-  attr_accessor :stone
   
   def render
     @s = 30.0
@@ -56,11 +79,11 @@ class Thing
     GL.Rotate(@r,0,0,1)
 
     GL.Begin(GL::POLYGON)          
-    GL.Color3f(  @c1, 0.0, 0.0)          
+    GL.Color(  @c.to_a)          
     GL.Vertex3f( -@s, + 2*@s * Math.sin(@o), 0.0)         
-    GL.Color3f(  0.0, @c2, 0.0)            
+    GL.Color(  @c.to_a)            
     GL.Vertex3f( - @s * Math.sin(@o), + 2*@s + 2*@s * Math.sin(@o), 0.0)   
-    GL.Color3f(  0.0, 0.0, @c3)           
+    GL.Color(  @c.to_a)           
     GL.Vertex3f(+ @s, -@s * Math.sin(@o), 0.0)         
     GL.End()       
     GL.PopMatrix();    
@@ -71,14 +94,38 @@ class Thing
     unless @stone.nil?
       val = 0.009 if @stone.winner
     end
-  
     
     @o += val
     @r += 10*val
   end
 end
 
-def draw_gl_scene
+class Mouse < Polygon
+  def initialize(x, y)
+    super
+    
+    @c = Color.random(1, 1, 1)
+  end
+end
+
+class MarkGFX < Polygon
+  attr_accessor :mark
+  
+  def render
+    return if @mark.nil? or @mark.player == 0
+    if @c.nil?
+      @c = Color.random(1, 1, 1)
+      if @mark.player == 1
+        @c = Color.random(1, 0, 0)
+      elsif @mark.player == 2
+        @c = Color.random(0, 1, 0)
+      end
+    end
+    super  
+  end
+end
+
+def fps
   $FREQ = 1000
   $frames += 1
   if $frames.modulo($FREQ) == 0
@@ -88,6 +135,10 @@ def draw_gl_scene
     $fps = ($FREQ/delta).to_i
     SDL::WM.setCaption "#{$fps} FPS", ""
   end
+end
+
+def draw_gl_scene
+  fps
   
   axres = XWINRES
   ayres = YWINRES
@@ -101,23 +152,14 @@ def draw_gl_scene
   @m.tick
   @m.render
   
-#    @t2.each { |t| 
-#    t.tick; t.render 
-#  }
-
-  
   axres = 400
   ayres = 400
   
-  #GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,XWINRES,XWINRES);
   GL::Ortho(0,axres,0,ayres,0,128);
-  #GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)  
-  
-  @things.each { |t| 
-    t.tick; t.render 
-  }
+
+  $game.field.each { |x,y,o| o.gfx.render; o.gfx.tick }
   
   GL.BindTexture( GL_TEXTURE_2D, 0 );
   GL::LoadIdentity();
@@ -126,55 +168,33 @@ end
 
 def sdl_event event
   if event.is_a?(SDL::Event2::Quit)
-    puts $fps
-    puts "aaa"
-    $stdout.flush
     $running = false
   elsif event.is_a?(SDL::Event2::KeyDown)
     if event.sym == SDL::Key::ESCAPE
-      puts $fps
-      puts "aaa"
-      $stdout.flush
       $running = false
     elsif event.sym == 48 # TODO 48 sucks!
       unless $game.gameover?
-        a,b=$game.kiGetMove; $game.doMove(a,b) # FIXME this can crash because it does not properly check
-        xx,yy=a,b
-        baaaaam = Thing.new(50+xx*100,50+(2-yy)*100, $game.field[xx][yy].player)
-        @things << baaaaam
-        baaaaam.stone = $game.field[xx][yy]
+        a, b = $game.ki_get_move; 
+        $game.do_move(a,b) 
         puts $game.to_s
       end
-      
-      elsif event.sym == SDL::Key::SPACE
-        $game = TicTacToe.new
-        @things = []
-        puts $game.to_s
+    elsif event.sym == SDL::Key::SPACE
+      $game = TicTacToe.new
+      puts $game.to_s
     else puts event.sym
     end
   elsif event.is_a?(SDL::Event2::MouseButtonDown)
-#    @t2 << Thing.new(event.x, YWINRES-event.y) if event.button == SDL::Mouse::BUTTON_LEFT
-#    @m.recolor if event.button == SDL::Mouse::BUTTON_RIGHT
+    puts "nothing yet"
   elsif event.is_a?(SDL::Event2::MouseMotion)
     @m.x = event.x
     @m.y = YWINRES-event.y
   end
 end
 
-require 'tictactoe'
-$game = TicTacToe.new
-#4.times do a,b=$game.kiGetMove; $game.doMove(a,b) end
-puts $game.to_s
-@m = Thing.new(200,200)#Thing.new(200,200)
-@things = []
-#@t2 = []
+def startup
+  $game = TicTacToe.new
+  puts $game.to_s
+  @m = Mouse.new(200,200)
+end
 
-
-
-#for xxx in 0..2 do
-#  for yyy in 0..2 do
-#    @things << Thing.new(50+xxx*100,50+(2-yyy)*100, $game.field[xxx][yyy].player) if $game.field[xxx][yyy].player != 0
-#  end
-#end
-
-require 'glbase'
+run!

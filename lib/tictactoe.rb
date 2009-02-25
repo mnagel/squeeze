@@ -21,25 +21,31 @@
 
 =end
 
+# mapping between the num-pad - keys and the coordinates in the game field
 $keymap = Hash.new
 (0..8).each { |i| $keymap[i+1] = [i%3,(8-i)/3] }
 
-class Array2D
+# two dimensional array
+class Matrix
+  # x, y is the size of the matrix
+  # a block is used to populate the matrix
   def initialize x, y
     @val = Array.new(x) { |i| Array.new(y) { |j| yield(i,j)  } }
   end
   
+  # allow for direct access of the values
   def [](index)
     @val[index]
   end
   
-  #  def each
-  #    @val.each_with_index { |o, i| 
-  #      o.each_with_index { |p, j| yield(i,j,p) }
-  #    }
-  #  end
+  def each
+    @val.each_with_index { |o, i| 
+      o.each_with_index { |p, j| yield(i,j,p) }
+    }
+  end
 end
 
+# class for the marks on the field
 class Mark
   attr_reader :x, :y, :winner
   attr_accessor :player 
@@ -69,7 +75,7 @@ class TicTacToe
   # creating a new @field 
   # setting @player to 2, because it's flipped before a move
   def initialize
-    @field = Array2D.new(3,3){|i,j| Mark.new(i,j) }
+    @field = Matrix.new(3,3){|i,j| Mark.new(i,j) }
     @player = 2
   end
   
@@ -80,11 +86,11 @@ class TicTacToe
     r = "##### ##### ##### ##### #####\n"
     (0..2).each { |y|
       (0..2).each { |x| 
-        r += getPrintChar(x,y, '.') + " "
+        r += get_print_char(x,y, '.') + " "
       }
       r += (" " * 5)
       (0..2).each { |x| 
-        r += getPrintChar(x,y, nil, " ", " ") + " "
+        r += get_print_char(x,y, nil, " ", " ") + " "
       }
       r += "\n"
     } 
@@ -96,16 +102,16 @@ class TicTacToe
   # *leer*:: character for empty fields
   # *one*:: character for fields occupied by player one
   # *two*:: same for player two
-  def getPrintChar x,y, leer = nil, one = 'X', two = 'O'
+  def get_print_char x,y, leer = nil, one = 'X', two = 'O'
     
-    return "@" if @field[x][y].winner
+    #return "@" if @field[x][y].winner
     
     case @field[x][y].player
     when 1 then one
     when 2 then two
     else
       if leer.nil? then 
-        $keymap.invert[[x,y]].to_s #$keymapI[3*x+y].to_s
+        $keymap.invert[[x,y]].to_s
       else
         leer
       end
@@ -113,31 +119,31 @@ class TicTacToe
   end
 
   # switch players, get a valid move and update the field according to the move
-  def doMove x,y
+  def do_move x,y
     @player = @player == 1 ? 2 : 1
     @field[x][y].player = @player
     
-    checkWinner.each { |item| item.is_winner! } unless checkWinner.nil?
+    check_winner.each { |item| item.is_winner! } unless check_winner.nil?
   end
 
   # check if a move is valid, i.e. 1-9 on a unoccupied field, or 0 for ai move
-  def isValidMove x,y
+  def is_valid_move x,y
     return false unless (0..3) === x
     return false unless (0..3) === y
     return @field[x][y].player == 0
   end	
 
   # get a move (from user) that is definitely valid
-  def getValidMove
+  def get_valid_move
     begin
       puts 'please enter your move: '
       i = gets.chomp.to_i
       if i == 0
-        return kiGetMove
+        return ki_get_move
       else
         x,y = $keymap[i]			
       end
-    end until isValidMove(x,y)
+    end until is_valid_move(x,y)
     return x,y
   end
 
@@ -146,7 +152,7 @@ class TicTacToe
   # * returns 1 if player 1 wins
   # * returns 2 if player 2 wins
   # FIXME no longeer -- if both players won, 1 is returned
-  def checkWinner thefield = @field
+  def check_winner thefield = @field
     checks = []
     
     d1 = []
@@ -166,23 +172,12 @@ class TicTacToe
     }
     checks << d1
     checks << d2
-    
-   # checks.each { |i| puts i;puts "---" }
-  #  puts "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-    
-    
+        
     (1..2).each { |player|
       checks.each { |c|
         d = c.map { |item| item.player } << player
-        #puts c.to_s
         if (d.uniq.length == 1 and 1..2 === d.first)
-#          c.each { |bla| bla.is_winner! }
-       #   puts "making winner!"
-        #  puts "winner is #{d.first}"
-          puts "winner made by"
-          puts c
-       #   puts "end winner made by"
-          return c #d.first 
+          return c
         end
       }
     }
@@ -191,11 +186,7 @@ class TicTacToe
   end
   
   # returns true if the field is full
-  def voll? 
-    #    return false
-    #    @field.all? { |x|  # TODO check if this works
-    #      x != 0
-    #    }
+  def full?
     for x in 0..2
       for y in 0..2
         return false if @field[x][y].player == 0
@@ -206,7 +197,7 @@ class TicTacToe
 
   # returns true if either the field is full or one player won the game
   def gameover?
-    voll? or not checkWinner.nil?
+    full? or not check_winner.nil?
   end
 
   # ask the ai for a move
@@ -216,7 +207,7 @@ class TicTacToe
   # * if its a winning field for the other player probably accept it
   # * otherwise accept it perhaps
   # * if the field was not accepted, choose again
-  def kiGetMove
+  def ki_get_move
     field2 = @field.clone
     srand
 
@@ -225,11 +216,11 @@ class TicTacToe
       next unless @field[tryx][tryy].player == 0
 
       field2[tryx][tryy].player = @player
-      if checkWinner(field2) != nil and checkWinner(field2).first.player == @player then return tryx,tryy end
+      if check_winner(field2) != nil and check_winner(field2).first.player == @player then return tryx,tryy end
 
       other = @player == 1 ? 2 : 1
       field2[tryx][tryy].player = other
-      if checkWinner(field2) != nil and checkWinner(field2).first.player == other then if rand(10) > 1 then return tryx,tryy end end
+      if check_winner(field2) != nil and check_winner(field2).first.player == other then if rand(10) > 1 then return tryx,tryy end end
 
       field2[tryx][tryy].player = 0
       if rand(10) > 8 then return tryx,tryy end
@@ -240,18 +231,18 @@ end
 # when run as executable, start a game and run it...
 if __FILE__ == $0
   begin
-    myGame = TicTacToe.new
+    game = TicTacToe.new
 
-    puts myGame.to_s
+    puts game.to_s
     puts "possible moves listed on the right, 0 lets AI pick a move"
 
-    while !(myGame.gameover?)
-      a,b = myGame.getValidMove
-      myGame.doMove(a,b)
-      puts myGame.to_s
+    while !(game.gameover?)
+      a,b = game.get_valid_move
+      game.do_move(a,b)
+      puts game.to_s
     end 
 
-    if (temp = myGame.checkWinner).nil?
+    if (temp = game.check_winner).nil?
       puts 'game over'
     else
       puts 'player ' + temp.to_s + ' won the game!'

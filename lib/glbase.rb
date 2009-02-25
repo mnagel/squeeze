@@ -24,6 +24,18 @@
 require "sdl"
 require "opengl"
 
+
+class Exception
+  def show
+    STDERR.puts "there was an error: #{self.message}"
+    STDERR.puts self.backtrace
+  end
+end
+
+XWINRES = 800
+YWINRES = 600
+FULLSCREEN = 0
+
 def init_gl_window(width = XWINRES, height = YWINRES)
   GL::Viewport(0,0, width, height)
   # Background color to black
@@ -44,31 +56,6 @@ def init_gl_window(width = XWINRES, height = YWINRES)
   GLU::Perspective(60.0, width / height, 0.1, 100.0)
   GL::MatrixMode(GL::MODELVIEW)
 end
-
-XWINRES = 800
-YWINRES = 600
-FULLSCREEN = 0
-
-SDL.init(SDL::INIT_VIDEO)
-SDL::TTF.init
-
-$frames = 0
-$time = Time.now
-$font = SDL::TTF.open("font.ttf", 20, index = 0)
-
-class Exception
-  def show
-    STDERR.puts "there was an error: #{self.message}"
-    STDERR.puts self.backtrace
-  end
-end
-
-
-
-
-SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
-init_gl_window(XWINRES, YWINRES)
-SDL::Mouse.hide()
 
 def initstuff
   big_endian = ([1].pack("N") == [1].pack("L"))
@@ -99,12 +86,29 @@ def initstuff
   GL.TexImage2D( GL::TEXTURE_2D, 0, 4, sdltexture.w, sdltexture.h, 0, GL::RGBA, GL::UNSIGNED_BYTE, sdltexture.pixels );
 end
 
-initstuff
-$running = true
-while $running do
-  event = SDL::Event2.poll
-  if !event.nil?
-    sdl_event(event)
+def run!
+  SDL.init(SDL::INIT_VIDEO)
+  SDL::TTF.init
+
+  $frames = 0
+  $time = Time.now
+  $font = SDL::TTF.open("font.ttf", 20, index = 0)
+  
+  SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
+  init_gl_window(XWINRES, YWINRES)
+  SDL::Mouse.hide()
+  
+  
+  initstuff
+  
+  startup
+  
+  $running = true
+  while $running do
+    event = SDL::Event2.poll
+    if !event.nil?
+      sdl_event(event)
+    end
+    draw_gl_scene
   end
-  draw_gl_scene
 end
