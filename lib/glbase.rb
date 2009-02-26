@@ -32,8 +32,8 @@ class Exception
   end
 end
 
-XWINRES = 800
-YWINRES = 600
+XWINRES = 750
+YWINRES = 750
 FULLSCREEN = 0
 
 def init_gl_window(width = XWINRES, height = YWINRES)

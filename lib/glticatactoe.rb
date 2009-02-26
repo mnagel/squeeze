@@ -55,7 +55,7 @@ class Mark
   
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(50+x*100,50+(2-y)*100)
+    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200)
     @gfx.mark = self
     #    @things << baaaaam
     #    baaaaam.stone = $game.field[x][y]
@@ -73,27 +73,29 @@ class Polygon
   attr_accessor :x, :y
   
   def render
-    @s = 30.0
+    tan30 = 0.577
+    
+    @s = 80 + 10 * Math.sin(@o);
     GL.PushMatrix();
     GL.Translate(@x,@y,0)
     GL.Rotate(@r,0,0,1)
 
     GL.Begin(GL::POLYGON)          
     GL.Color(  @c.to_a)          
-    GL.Vertex3f( -@s, + 2*@s * Math.sin(@o), 0.0)         
+    #GL.Vertex3f( -@s, + 2*@s * Math.sin(@o), 0.0)        
+    GL.Vertex3f( -@s, tan30 * -@s, 0.0)         
     GL.Color(  @c.to_a)            
-    GL.Vertex3f( - @s * Math.sin(@o), + 2*@s + 2*@s * Math.sin(@o), 0.0)   
+    #GL.Vertex3f( - @s * Math.sin(@o), + 2*@s + 2*@s * Math.sin(@o), 0.0)   
+    GL.Vertex3f( 0.0, 2*tan30*@s, 0.0)   
     GL.Color(  @c.to_a)           
-    GL.Vertex3f(+ @s, -@s * Math.sin(@o), 0.0)         
+    #GL.Vertex3f(+ @s, -@s * Math.sin(@o), 0.0)         
+    GL.Vertex3f(@s, tan30*-@s, 0.0)         
     GL.End()       
     GL.PopMatrix();    
   end
   
   def tick
     val = 0.003
-    unless @stone.nil?
-      val = 0.009 if @stone.winner
-    end
     
     @o += val
     @r += 10*val
@@ -123,6 +125,16 @@ class MarkGFX < Polygon
     end
     super  
   end
+  
+    def tick
+    val = 0.003
+    unless @mark.nil?
+      val = 0.009 if @mark.winner
+    end
+    
+    @o += val
+    @r += 10*val
+  end
 end
 
 def fps
@@ -147,22 +159,26 @@ def draw_gl_scene
   GL::LoadIdentity();
   GL::Viewport(0,0,axres,ayres);
   GL::Ortho(0,axres,0,ayres,0,128);
-  GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)  
+  GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
+GL::MatrixMode(GL::MODELVIEW);
+  
     
   @m.tick
   @m.render
   
-  axres = 400
-  ayres = 400
-  
+  axres = 600
+  ayres = 600
+  GL::MatrixMode(GL::PROJECTION);
+  #GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
-  GL::Viewport(0,0,XWINRES,XWINRES);
+  GL::Viewport(0,0,XWINRES,YWINRES);
   GL::Ortho(0,axres,0,ayres,0,128);
-
+  GL::MatrixMode(GL::MODELVIEW);
+  
   $game.field.each { |x,y,o| o.gfx.render; o.gfx.tick }
   
   GL.BindTexture( GL_TEXTURE_2D, 0 );
-  GL::LoadIdentity();
+ # GL::LoadIdentity();
   SDL.GLSwapBuffers
 end
 
