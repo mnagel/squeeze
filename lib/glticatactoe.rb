@@ -126,7 +126,7 @@ class MarkGFX < Polygon
     super  
   end
   
-    def tick
+  def tick
     val = 0.003
     unless @mark.nil?
       val = 0.009 if @mark.winner
@@ -160,7 +160,7 @@ def draw_gl_scene
   GL::Viewport(0,0,axres,ayres);
   GL::Ortho(0,axres,0,ayres,0,128);
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
-GL::MatrixMode(GL::MODELVIEW);
+  GL::MatrixMode(GL::MODELVIEW);
   
     
   @m.tick
@@ -178,7 +178,7 @@ GL::MatrixMode(GL::MODELVIEW);
   $game.field.each { |x,y,o| o.gfx.render; o.gfx.tick }
   
   GL.BindTexture( GL_TEXTURE_2D, 0 );
- # GL::LoadIdentity();
+  # GL::LoadIdentity();
   SDL.GLSwapBuffers
 end
 
@@ -200,7 +200,17 @@ def sdl_event event
     else puts event.sym
     end
   elsif event.is_a?(SDL::Event2::MouseButtonDown)
-    puts "nothing yet"
+    if event.button == SDL::Mouse::BUTTON_RIGHT
+      $game = TicTacToe.new
+      puts $game.to_s
+    elsif
+      fx = (event.x / (XWINRES/3)).to_i
+      fy = (event.y / (YWINRES/3)).to_i
+      unless $game.gameover?
+        $game.do_move(fx,fy) 
+        puts $game.to_s
+      end
+    end
   elsif event.is_a?(SDL::Event2::MouseMotion)
     @m.x = event.x
     @m.y = YWINRES-event.y
