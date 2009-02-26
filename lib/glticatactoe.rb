@@ -40,12 +40,12 @@ class Color
     @r, @g, @b = r, g, b
   end
   
-  def self.random r, b, g
-    return self.new(r * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8))
+  def self.random r, g, b
+    return self.new(r * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8))
   end
   
   def to_a
-    return [@r, @b, @g]
+    return [@r, @g, @b]
   end
 end
 
@@ -106,7 +106,7 @@ class Mouse < Polygon
   def initialize(x, y)
     super
     
-    @c = Color.random(1, 1, 1)
+    @c = Color.random(0, 1, 0)
   end
 end
 
@@ -120,7 +120,7 @@ class MarkGFX < Polygon
       if @mark.player == 1
         @c = Color.random(1, 0, 0)
       elsif @mark.player == 2
-        @c = Color.random(0, 1, 0)
+        @c = Color.random(0, 0, 1)
       end
     end
     super  

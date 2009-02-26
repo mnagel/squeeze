@@ -120,6 +120,7 @@ class TicTacToe
 
   # switch players, get a valid move and update the field according to the move
   def do_move x,y
+    return unless is_valid_move(x,y)
     @player = @player == 1 ? 2 : 1
     @field[x][y].player = @player
     
