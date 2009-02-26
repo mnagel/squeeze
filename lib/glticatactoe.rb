@@ -34,18 +34,18 @@ class Float
 end
 
 class Color
-  attr_accessor :r, :g, :b
+  attr_accessor :r, :g, :b, :a
   
-  def initialize r, g, b
-    @r, @g, @b = r, g, b
+  def initialize r, g, b, a=1
+    @r, @g, @b, @a = r, g, b, a
   end
   
   def self.random r, g, b
-    return self.new(r * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8))
+    return self.new(r * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8), 1)
   end
   
   def to_a
-    return [@r, @g, @b]
+    return [@r, @g, @b, @a]
   end
 end
 
@@ -66,8 +66,8 @@ class Polygon
   def initialize x, y
     @x, @y = x, y
    
-    @o = rand
-    @r = rand
+    @o = rand(360)
+    @r = rand(360)
   end
   
   attr_accessor :x, :y
@@ -81,21 +81,21 @@ class Polygon
     GL.Rotate(@r,0,0,1)
 
     GL.Begin(GL::POLYGON)          
-    GL.Color(  @c.to_a)          
+    GL.Color(  @c[0].to_a)          
     #GL.Vertex3f( -@s, + 2*@s * Math.sin(@o), 0.0)        
     GL.Vertex3f( -@s, tan30 * -@s, 0.0)         
-    GL.Color(  @c.to_a)            
+    GL.Color(  @c[1].to_a)            
     #GL.Vertex3f( - @s * Math.sin(@o), + 2*@s + 2*@s * Math.sin(@o), 0.0)   
     GL.Vertex3f( 0.0, 2*tan30*@s, 0.0)   
-    GL.Color(  @c.to_a)           
+    GL.Color(  @c[2].to_a)           
     #GL.Vertex3f(+ @s, -@s * Math.sin(@o), 0.0)         
     GL.Vertex3f(@s, tan30*-@s, 0.0)         
     GL.End()       
     GL.PopMatrix();    
   end
   
-  def tick
-    val = 0.003
+  def tick dt
+    val = - 0.003 * dt
     
     @o += val
     @r += 10*val
@@ -106,7 +106,8 @@ class Mouse < Polygon
   def initialize(x, y)
     super
     
-    @c = Color.random(0, 1, 0)
+    @c = Array.new(3) do Color.random(0, 1, 0) end
+    @c.each { |c| c.a = 0.7 }
   end
 end
 
@@ -116,55 +117,41 @@ class MarkGFX < Polygon
   def render
     return if @mark.nil? or @mark.player == 0
     if @c.nil?
-      @c = Color.random(1, 1, 1)
+     # @c = Color.random(1, 1, 1)
       if @mark.player == 1
-        @c = Color.random(1, 0, 0)
+        @c = Array.new(3) do Color.random(1, 0, 0) end
       elsif @mark.player == 2
-        @c = Color.random(0, 0, 1)
+        @c = Array.new(3) do Color.random(0, 0, 1) end
       end
     end
     super  
   end
   
-  def tick
+  def tick dt
     val = 0.003
     unless @mark.nil?
       val = 0.009 if @mark.winner
     end
+    
+    val *= dt
     
     @o += val
     @r += 10*val
   end
 end
 
-def fps
-  $FREQ = 1000
-  $frames += 1
-  if $frames.modulo($FREQ) == 0
-    $timeold = $time
-    $time = Time.now
-    delta = ($time - $timeold).to_f
-    $fps = ($FREQ/delta).to_i
-    SDL::WM.setCaption "#{$fps} FPS", ""
-  end
-end
-
-def draw_gl_scene
-  fps
-  
+def draw_gl_scene dt
   axres = XWINRES
   ayres = YWINRES
   
-  GL::MatrixMode(GL::PROJECTION);
+  
+      GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,axres,ayres);
   GL::Ortho(0,axres,0,ayres,0,128);
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
   GL::MatrixMode(GL::MODELVIEW);
-  
-    
-  @m.tick
-  @m.render
+
   
   axres = 600
   ayres = 600
@@ -175,7 +162,23 @@ def draw_gl_scene
   GL::Ortho(0,axres,0,ayres,0,128);
   GL::MatrixMode(GL::MODELVIEW);
   
-  $game.field.each { |x,y,o| o.gfx.render; o.gfx.tick }
+  $game.field.each { |x,y,o| o.gfx.render; o.gfx.tick dt }
+  
+  
+    axres = XWINRES
+  ayres = YWINRES
+  
+    GL::MatrixMode(GL::PROJECTION);
+  GL::LoadIdentity();
+  GL::Viewport(0,0,axres,ayres);
+  GL::Ortho(0,axres,0,ayres,0,128);
+  #GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
+  GL::MatrixMode(GL::MODELVIEW);
+  
+       GL::Enable(GL::BLEND); GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA);  
+    
+  @m.tick dt
+  @m.render
   
   GL.BindTexture( GL_TEXTURE_2D, 0 );
   # GL::LoadIdentity();
@@ -203,11 +206,17 @@ def sdl_event event
     if event.button == SDL::Mouse::BUTTON_RIGHT
       $game = TicTacToe.new
       puts $game.to_s
-    elsif
+    elsif event.button == SDL::Mouse::BUTTON_LEFT
       fx = (event.x / (XWINRES/3)).to_i
       fy = (event.y / (YWINRES/3)).to_i
       unless $game.gameover?
         $game.do_move(fx,fy) 
+        puts $game.to_s
+      end
+  elsif event.button == SDL::Mouse::BUTTON_MIDDLE
+      unless $game.gameover?
+        a, b = $game.ki_get_move; 
+        $game.do_move(a,b) 
         puts $game.to_s
       end
     end

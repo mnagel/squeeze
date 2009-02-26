@@ -30,6 +30,7 @@ class Matrix
   # x, y is the size of the matrix
   # a block is used to populate the matrix
   def initialize x, y
+    @x, @y = x,y
     @val = Array.new(x) { |i| Array.new(y) { |j| yield(i,j)  } }
   end
   
@@ -42,6 +43,10 @@ class Matrix
     @val.each_with_index { |o, i| 
       o.each_with_index { |p, j| yield(i,j,p) }
     }
+  end
+  
+  def clone
+    return (Matrix.new(@x,@y) do |i,j| self[i][j].clone end)
   end
 end
 
@@ -246,7 +251,7 @@ if __FILE__ == $0
     if (temp = game.check_winner).nil?
       puts 'game over'
     else
-      puts 'player ' + temp.to_s + ' won the game!'
+      puts 'player ' + temp.first.player.to_s + ' won the game!'
     end
   end while begin
     puts "again? 1/0 goes again, everything else stops: "

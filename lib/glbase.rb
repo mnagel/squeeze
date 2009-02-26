@@ -86,6 +86,26 @@ def initstuff
   GL.TexImage2D( GL::TEXTURE_2D, 0, 4, sdltexture.w, sdltexture.h, 0, GL::RGBA, GL::UNSIGNED_BYTE, sdltexture.pixels );
 end
 
+$dt = 100
+$oldt = Time.now
+def fps
+  time = Time.now
+  $dt = 1000 * (time - $oldt).to_f
+  $oldt = time
+  
+  #puts $dt
+  
+  $FREQ = 1000
+  $frames += 1
+  if $frames.modulo($FREQ) == 0
+    $timeold = $time
+    $time = Time.now
+    delta = ($time - $timeold).to_f
+    $fps = ($FREQ/delta).to_i
+    SDL::WM.setCaption "#{$fps} FPS", ""
+  end
+end
+
 def run!
   SDL.init(SDL::INIT_VIDEO)
   SDL::TTF.init
@@ -109,6 +129,7 @@ def run!
     if !event.nil?
       sdl_event(event)
     end
-    draw_gl_scene
+    fps
+    draw_gl_scene $dt
   end
 end
