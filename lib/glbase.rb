@@ -65,33 +65,43 @@ def define_screen virtual_x = XWINRES, virtual_y  = YWINRES
   GL::MatrixMode(GL::MODELVIEW);
 end
 
-def initstuff
-  big_endian = ([1].pack("N") == [1].pack("L"))
 
-  if big_endian
-    rmask = 0xff000000
-    gmask = 0x00ff0000
-    bmask = 0x0000ff00
-    amask = 0x000000ff
-  else
-    rmask = 0x000000ff
-    gmask = 0x0000ff00
-    bmask = 0x00ff0000
-    amask = 0xff000000
-  end
+def drawtext font, r, g, b, x, y, z, text
+
+  GL.Color( r,g,b) 
   
-  w = 256         # pow(2,ceil(log(ourSurface->w)/log(2))); /* round up to the nearest power of two*/
-  sdltext = $font.renderBlendedUTF8("testrendering",100, 100, 100);
-  sdltexture = SDL::Surface.new(SDL::SWSURFACE, w, w, 32, rmask, gmask, bmask, amask);
-  SDL::Surface.blit(sdltext, 0, 0, w, w, sdltexture, 0, 0)
+  GL.PushMatrix();
+  GL::MatrixMode(GL::PROJECTION);
+  GL::LoadIdentity();
+  GL::Viewport(0,0,XWINRES,YWINRES);
+  GL::Ortho(0,XWINRES,YWINRES,0,0,128);
+  GL::MatrixMode(GL::MODELVIEW);
   
-  $texture = GL.GenTextures(1).first;
-  GL.BindTexture( GL_TEXTURE_2D, $texture );
+
+  surface = font.renderBlendedUTF8(text,r,g, b); # dont generate over and over again
+ 
+  $texture = GL.GenTextures(1).first;  # dont generate over and over again...
+  GL::BindTexture(GL::TEXTURE_2D, $texture);
+ 
+  GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+  GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+ 
+  GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, surface.w, surface.h, 0, GL::BGRA, GL::UNSIGNED_BYTE, surface.pixels);
+ 
   
-  GL.TexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-  GL.TexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  GL::Begin(GL_QUADS);
+  GL.TexCoord2d(0, 0); GL.Vertex3d(x, y, z);
+  GL.TexCoord2d(1, 0); GL.Vertex3d(x+surface.w, y, z);
+  GL.TexCoord2d(1, 1); GL.Vertex3d(x+surface.w, y+surface.h, z);
+  GL.TexCoord2d(0, 1); GL.Vertex3d(x, y+surface.h, z);
+  GL::End();
+        
+  GL::BindTexture(GL::TEXTURE_2D,0);
+
+
+  GL::DeleteTextures($texture)
   
-  GL.TexImage2D( GL::TEXTURE_2D, 0, 4, sdltexture.w, sdltexture.h, 0, GL::RGBA, GL::UNSIGNED_BYTE, sdltexture.pixels );
+  GL.PopMatrix();
 end
 
 $dt = 100
@@ -126,9 +136,6 @@ def run!
   init_gl_window(XWINRES, YWINRES)
   SDL::Mouse.hide()
   
-  
-  initstuff
-  
   startup
   GL.BindTexture( GL_TEXTURE_2D, 0 );
   
@@ -142,6 +149,6 @@ def run!
     GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
     draw_gl_scene $dt
     
-  SDL.GLSwapBuffers
+    SDL.GLSwapBuffers
   end
 end

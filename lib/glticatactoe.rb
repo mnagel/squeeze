@@ -228,11 +228,16 @@ def draw_gl_scene dt
     o.gfx.tick dt
   }
   
+  drawtext $font, 255, 0, 25, 300, 300, 0, "!!!!!!!!!!!!!!!!!!!!!!"
+ 
   define_screen
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.tick dt
   @m.render
+  
+  drawtext $font, 1, 0, 255, 100, 100, 0, "KARAMBA!!   ---  #{$fps}"
+  
 end
 
 def on_key_down key
