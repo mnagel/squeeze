@@ -21,36 +21,34 @@
 
 =end
 
-# mapping between the num-pad - keys and the coordinates in the game field
-$keymap = Hash.new
-(0..8).each { |i| $keymap[i+1] = [i%3,(8-i)/3] }
-
-# two dimensional array
+# the Matrix class is used to store two dimensional data
 class Matrix
-  # x, y is the size of the matrix
-  # a block is used to populate the matrix
+  # x, y:: the size of the matrix
+  # yield:: block to populate the matrix
   def initialize x, y
     @x, @y = x,y
     @val = Array.new(x) { |i| Array.new(y) { |j| yield(i,j)  } }
   end
   
-  # allow for direct access of the values
+  # allows acessing the values directly
   def [](index)
     @val[index]
   end
   
+  # yield:: block is called for each value, with indexes and value
   def each
     @val.each_with_index { |o, i| 
       o.each_with_index { |p, j| yield(i,j,p) }
     }
   end
   
+  # returns a deep copy of the matrix
   def clone
     return (Matrix.new(@x,@y) do |i,j| self[i][j].clone end)
   end
 end
 
-# class for the marks on the field
+# the Mark class represents the nine marks on the board
 class Mark
   attr_reader :x, :y, :winner
   attr_accessor :player 
@@ -71,10 +69,14 @@ end
 
 # class to simulate a game of tictactoe
 class TicTacToe
+  
+  # mapping between the num-pad - keys and the coordinates in the game field
+  $keymap = Hash.new
+  (0..8).each { |i| $keymap[i+1] = [i%3,(8-i)/3] }
 	
   # internal array used to represent the state of the game
   # readable to allow unit-testing and the like
-  attr :field
+  attr_accessor :field, :player
 	
   # constructor
   # creating a new @field 

@@ -57,6 +57,14 @@ def init_gl_window(width = XWINRES, height = YWINRES)
   GL::MatrixMode(GL::MODELVIEW)
 end
 
+def define_screen virtual_x = XWINRES, virtual_y  = YWINRES
+  GL::MatrixMode(GL::PROJECTION);
+  GL::LoadIdentity();
+  GL::Viewport(0,0,XWINRES,YWINRES);
+  GL::Ortho(0,virtual_x,0,virtual_y,0,128);
+  GL::MatrixMode(GL::MODELVIEW);
+end
+
 def initstuff
   big_endian = ([1].pack("N") == [1].pack("L"))
 
@@ -122,6 +130,7 @@ def run!
   initstuff
   
   startup
+  GL.BindTexture( GL_TEXTURE_2D, 0 );
   
   $running = true
   while $running do
@@ -130,6 +139,9 @@ def run!
       sdl_event(event)
     end
     fps
+    GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
     draw_gl_scene $dt
+    
+  SDL.GLSwapBuffers
   end
 end

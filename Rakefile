@@ -1,73 +1,47 @@
-# rakefile for tictactoe
-# further documentation available in the source files
-# (rake, rake/clean, rake/testtask, rake/rdoctask)
-# and online at the follwing addresses
-# http://www.ruby-doc.org/stdlib/libdoc/rdoc/rdoc/index.html
-# http://rake.rubyforge.org/classes/Rake/RDocTask.html
-# http://rake.rubyforge.org/files/doc/rakefile_rdoc.html
-# http://rubyrake.org/index.html
+#!/usr/bin/env ruby -rubygems
+
+=begin
+    tictactoe - tic tac toe game
+    Copyright (C) 2008, 2009 by Michael Nagel
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    $Id$
+
+=end
 
 require 'rake'
-require 'rake/clean'
 require 'rake/testtask'
 require 'rake/rdoctask'
 
-# title for the rdoc documentation
-rdoctitle = "documentation for oneshot"
-
 # task to be done when building the project...
-# example:
-# task :default => ["rdoc"]
 task :default => [:test]
-
-# to get a task included into the netbeans-rake-list, let it have a description
-#desc "some-stupid-desc."
-#file "nlr-need-some-file" => ["required-file"] do
-#  sh "touch sh-command-file-touched"
-#end
-#file "required-file" => [] do
-#	 sh "touch required-file"
-#end
-
-# lists of file something can depend on
-#SRC = FileList['*.c']
-#OBJ = SRC.ext('o')
-# 
-# simple rule for many files
-#rule '.o' => '.c' do |t|
-#  sh "cc -c -o #{t.name} #{t.source}"
-#end
-#
-# file dependency with code block
-#file "hello" => OBJ do
-#  sh "cc -o hello #{OBJ}"
-#end
-#  
-# file dependencies without code blocks
-#file 'main.o' => ['main.c', 'greet.h']
-#file 'greet.o' => ['greet.c']
-
-# documentation is clobbered automatically
-#CLOBBER.include("doc") 
-
-# example to include c-style o-files in the list of files to clean
-# same works with clobber, of course
-CLEAN.include('lib/**/*.o')
 
 # the rdoc task(s) (family)
 Rake::RDocTask.new do |rd|
-	rd.name = :rdoc
-	rd.rdoc_dir = "doc"
-	rd.main = "README"
-	rd.title = rdoctitle
-	rd.rdoc_files.include("README", "Rakefile", "lib/**/*.rb", "test/**/*.rb")
-	rd.options << "--line-numbers" << "--inline-source" << "--diagram" << "--fileboxes"
+  rd.name = :rdoc
+  rd.rdoc_dir = "rdoc"
+  rd.main = "lib/tictactoe.rb"
+  rd.title = "documentation for tictactoe"
+  rd.rdoc_files.include("lib/**/*.rb")
+  rd.options << "--line-numbers" << "--inline-source" << "--diagram" << "--fileboxes" << "--all"
 end
 
 # the test task(s)
 Rake::TestTask.new do |t|
-	t.libs << "test"
-	# tests to run
-	t.test_files = FileList['test/testsuite.rb'] 
-	t.verbose = true
+  t.libs << "test"
+  # tests to run
+  t.test_files = FileList['test/testsuite.rb'] 
+  t.verbose = true
 end

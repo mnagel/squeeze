@@ -1,18 +1,16 @@
 $:.unshift File.join(File.dirname(__FILE__),'..','lib')
 
 require 'test/unit'
-
-# TODO ... test if these tests still run...
+require 'tictactoe'
 
 class AItest < Test::Unit::TestCase
   def test_dont_pick_occupied
-		100.times do
-			x = TicTacToe.new
-			x.field[3] = 1
-			x.field[1] = 2
-			x = x.ki_get_move
-			assert_not_equal 1, x, "ki chose occupied field"
-			assert_not_equal 3, x, "ki chose occupied field"
-		end
-	end
+    100.times do
+      f = TicTacToe.new
+      f.field[0][0].player = 1
+      f.field[1][1].player = 2
+      x, y = f.ki_get_move
+      assert_equal 0, f.field[x][y].player, "ki chose occupied field"
+    end
+  end
 end
