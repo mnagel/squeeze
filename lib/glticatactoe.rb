@@ -35,162 +35,39 @@ class Float
   end
 end
 
-class Color
-  attr_accessor :r, :g, :b, :a
-  
-  def initialize r, g, b, a=1
-    @r, @g, @b, @a = r, g, b, a
-  end
-  
-  def self.random r, g, b
-    return self.new(r * Float.rand(0.2, 0.8), g * Float.rand(0.2, 0.8), b * Float.rand(0.2, 0.8), 1)
-  end
-  
-  def to_a
-    return [@r, @g, @b, @a]
-  end
-end
-
-# some more information about the mark class
 class Mark
   alias_method :original, :initialize 
   attr_accessor :gfx
   
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200)
+    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, nil)
     @gfx.mark = self
-    #    @things << baaaaam
-    #    baaaaam.stone = $game.field[x][y]
+    @gfx.rotating = true
   end
 end
 
-class Polygon
-  def initialize x, y
-    @x, @y = x, y
-   
-    @o = rand(360)
-    @r = rand(360)
-    @s = 0
-  end
-  
-  attr_accessor :x, :y
-  
-  def render
-    GL.PushMatrix();
-    
-    GL.Translate(@x,@y,0)
-    GL.Rotate(@r,0,0,1)
-
-    GL.Begin(GL::POLYGON)          
-    GL.Color(  @c[0].to_a)             
-    GL.Vertex3f( -@s, TAN30 * -@s, 0.0)     
-    
-    GL.Color(  @c[1].to_a)             
-    GL.Vertex3f( 0.0, 2*TAN30*@s, 0.0)   
-    
-    GL.Color(  @c[2].to_a)           
-    GL.Vertex3f(@s, TAN30*-@s, 0.0)         
-    GL.End()       
-    
-    GL.PopMatrix();    
-  end
-  
-  def tick dt
-    val = - 0.003 * dt
-    
-    @o += val
-    @r += 10*val
-    @s = 80 + 10 * Math.sin(@o);
-  end
-end
-
-class Mouse < Polygon
-  def initialize(x, y)
-    super
-    
-    @c = Array.new(3) do Color.random(0, 1, 0) end
-    @c.each { |c| c.a = 0.7 }
-    
-    @d = Array.new(3) do Color.random(0, 0, 0) end
-    @d.each { |c| c.a = 0.7 }
-  end
-  
-  def render
-    GL.PushMatrix();
-    
-    GL.Translate(@x,@y,0)
-    GL.Rotate(@r,0,0,1)
-
-    GL.Begin(GL::TRIANGLES)          
-    GL.Color(  @c[0].to_a)             
-    GL.Vertex3f( -@s, TAN30 * -@s, 0.0)     
-    
-    GL.Color(  @c[1].to_a)             
-    GL.Vertex3f( 0.0, 2*TAN30*@s, 0.0)   
-    
-    GL.Color(  @c[2].to_a)           
-    GL.Vertex3f(@s, TAN30*-@s, 0.0)     
-
-
-    GL.Color(  @d[0].to_a)             
-    GL.Vertex3f( -@s/3, TAN30 * -@s/3, 0.0)     
-    
-    GL.Color(  @d[1].to_a)             
-    GL.Vertex3f( 0.0, 2*TAN30*@s/3, 0.0)   
-    
-    GL.Color(  @d[2].to_a)           
-    GL.Vertex3f(@s/3, TAN30*-@s/3, 0.0)
-    GL.End()       
-    
-    GL.PopMatrix();    
-  end
-  
-  @q = 0
-  def tick dt
-    super
-    
-    if $game.player == 1
-      return if @q == 1
-      @q = 1
-      @d.each do |a| a.r = 0 end
-      @d.each do |a| a.b = Float.rand(0.2, 0.8) end
-    else
-            return if @q == 2
-      @q = 2
-      @d.each do |a| a.r = Float.rand(0.2, 0.8) end
-      @d.each do |a| a.b = 0 end
-    end
-  end
-end
-
-class MarkGFX < Polygon
+class MarkGFX < Triangle
   attr_accessor :mark
   
+  # TODO improve this
   def render
-    return if @mark.nil? or @mark.player == 0
-    if @c.nil?
-      # @c = Color.random(1, 1, 1)
-      if @mark.player == 1
-        @c = Array.new(3) do Color.random(1, 0, 0) end
-      elsif @mark.player == 2
-        @c = Array.new(3) do Color.random(0, 0, 1) end
-      end
-    end
-    super  
+    super unless @colors.nil?
   end
   
+  # TODO improve this!
   def tick dt
-    val = 0.003
-    unless @mark.nil?
-      val = 0.009 if @mark.winner
+    super
+    return if @mark.nil? or @mark.player == 0
+    self.pulsing = true if @mark.winner
+    
+    if @colors.nil?
+      if @mark.player == 1
+        @colors = Array.new(3) do Color.random(1, 0, 0) end
+      elsif @mark.player == 2
+        @colors = Array.new(3) do Color.random(0, 0, 1) end
+      end
     end
-    
-    val *= dt
-    
-    @o += val
-    @r += 10*val
-    @s = 80 + 10 * Math.sin(@o);
   end
 end
 
@@ -228,19 +105,19 @@ def draw_gl_scene dt
     o.gfx.tick dt
   }
   
-  drawtext $font, 255, 0, 25, 300, 300, 0, "!!!!!!!!!!!!!!!!!!!!!!"
- 
   define_screen
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.tick dt
   @m.render
   
-  drawtext $font, 1, 0, 255, 100, 100, 0, "KARAMBA!!   ---  #{$fps}"
-  
+  $image.tick dt
+  #$image.render #100, 100, 0
+  drawtext $font, 1, 0, 255, 10, 10, 0, "rendering @#{$fps}fps"
 end
 
 def on_key_down key
+  @m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE :
       $running = false
@@ -275,14 +152,16 @@ def on_mouse_down button, x, y
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
       puts $game.to_s
-    end
-    
+    end    
   end
 end
 
 def on_mouse_move x, y
   @m.x = x
   @m.y = YWINRES-y
+  
+  $image.x = x
+  $image.y = YWINRES - y
 end
 
 def sdl_event event
@@ -300,7 +179,10 @@ end
 def startup
   $game = TicTacToe.new
   puts $game.to_s
-  @m = Mouse.new(200,200)
+  @m = Triangle.new(100, 100, 100, Color.new(0,1,0,0.7)) #Mouse.new(200,200)
+  @m.rotating = true
+  @m.pulsing = true
+  $image = ImageTexture.new("gfx/pic.png", 512)
 end
 
 run!
