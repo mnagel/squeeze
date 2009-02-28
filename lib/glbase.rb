@@ -24,6 +24,12 @@
 require "sdl"
 require "opengl"
 
+def with_some_matrix
+  GL.PushMatrix();
+  yield if block_given?
+  GL.PopMatrix();
+end
+
 # TODO make inherit from array...
 class Color
   attr_accessor :r, :g, :b, :a
@@ -41,32 +47,46 @@ class Color
       a)
   end
   
+  def self.random__conv r, g, b, a, n
+    return Array.new(n) { random(r, g, b, a) }
+  end
+  
   def to_a
     return [@r, @g, @b, @a]
   end
 end
 
-# TODO allow for composite entities (mouse pointer consisting out of player indicator and general mouse pointer)
 class Entity
   def initialize x, y, size
     @x, @y, @size = x, y, size
-    @max_size = size
+    
+    @subs = []
+    @visible = true
   end
   
-  attr_accessor :x, :y, :size
+  attr_accessor :x, :y, :size, :visible
   
   def render
-    throw Exception.new("#{self.class} wont render")
+    with_some_matrix do
+      GL.Translate(@x, @y, 0)
+      GL.Scale(@size,@size,1)
+    
+      yield if block_given?
+  
+      @subs.each { |sub| sub.render }
+      
+    end if @visible
   end
   
   def tick dt
-    throw Exception.new("#{self.class} wont tick")
+    @subs.each { |sub| sub.tick dt }
   end
 end
 
 class OpenGLPrimitive < Entity
   def initialize x, y, size
     super x, y, size
+    @max_size = size
     
     @rotation = 0
     @pulse = 0
@@ -74,15 +94,34 @@ class OpenGLPrimitive < Entity
     @pulsing = false
   end
   
-  attr_accessor :rotating, :pulsing
+  def rotating=(bool)
+    puts "setting rotation to #{bool} for #{self.class}"
+    @rotating = bool
+  end
+  
+  def pulsing=(bool)
+    @pulsing = bool
+  end
+  
+  attr_reader :pulsing
   
   def tick dt
+    super dt
     val = 0.003 * dt
     
     @rotation += 10 * val if @rotating
     @pulse += val if @pulsing
     sin = Math.cos(@pulse)
     @size = @max_size * 0.5 * (1 + sin * sin)
+  end
+  
+  def render
+    with_some_matrix do
+      super do
+        GL.Rotate(@rotation, 0, 0, 1)
+        yield if block_given?
+      end
+    end
   end
 end
 
@@ -100,31 +139,21 @@ class Triangle < OpenGLPrimitive
   attr_accessor :colors
   
   def render
-    # puts "rendering #{self} at #{@x},#{@y} -- #{@size}"
-    GL.PushMatrix();
+    super do
+      GL.Begin(GL::TRIANGLES)
+      GL.Color(@colors[0].to_a)
+      GL.Vertex3f(-1, -TAN30, 0.0)
     
-    GL.Translate(@x, @y, 0)
-    GL.Rotate(@rotation, 0, 0, 1)
-
-    GL.Begin(GL::TRIANGLES)
-    GL.Color(@colors[0].to_a)
-    GL.Vertex3f(-@size, TAN30 * -@size, 0.0)
+      GL.Color(@colors[1].to_a)
+      GL.Vertex3f(0, 2*TAN30, 0.0)
     
-    GL.Color(@colors[1].to_a)
-    GL.Vertex3f(0.0, 2*TAN30 * @size, 0.0)
-    
-    GL.Color(@colors[2].to_a)
-    GL.Vertex3f(@size, TAN30 * -@size, 0.0)
-    GL.End()       
-    
-    GL.PopMatrix();    
+      GL.Color(@colors[2].to_a)
+      GL.Vertex3f(1, -TAN30, 0.0)
+      GL.End()       
+    end
   end
 end
 
-# TODO add back mouse with indication if active player
-#class Mouse < Triangle
-#  
-#end
 
 class Exception
   def show

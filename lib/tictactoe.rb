@@ -55,7 +55,7 @@ class Mark
   
   def initialize x, y
     @x, @y = x, y
-    @player, @winner = 0
+    @player, @winner = 0, false
   end
   
   def is_winner!
@@ -83,7 +83,7 @@ class TicTacToe
   # setting @player to 2, because it's flipped before a move
   def initialize
     @field = Matrix.new(3,3){|i,j| Mark.new(i,j) }
-    @player = 2
+    @player = 1
   end
   
   # prints the field, with the board on the left and a list of possible moves
@@ -128,10 +128,13 @@ class TicTacToe
   # switch players, get a valid move and update the field according to the move
   def do_move x,y
     return unless is_valid_move(x,y)
-    @player = @player == 1 ? 2 : 1
     @field[x][y].player = @player
+    check_winner.each do |item|
+      item.is_winner!
+    end unless check_winner.nil?
     
-    check_winner.each { |item| item.is_winner! } unless check_winner.nil?
+    @player = @player == 1 ? 2 : 1
+    @player = 0 if gameover?
   end
 
   # check if a move is valid, i.e. 1-9 on a unoccupied field, or 0 for ai move
@@ -161,6 +164,8 @@ class TicTacToe
   # * returns 2 if player 2 wins
   # FIXME no longeer -- if both players won, 1 is returned
   def check_winner thefield = @field
+    winners = []
+    
     checks = []
     
     d1 = []
@@ -185,10 +190,13 @@ class TicTacToe
       checks.each { |c|
         d = c.map { |item| item.player } << player
         if (d.uniq.length == 1 and 1..2 === d.first)
-          return c
+          c.each { |var| winners << var }
         end
       }
     }
+    if winners.length > 0
+      return winners
+    end
     
     return nil
   end

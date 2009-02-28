@@ -41,32 +41,52 @@ class Mark
   
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, nil)
-    @gfx.mark = self
+    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, 
+      [Color.random__conv(1, 0, 0, 1, 3), Color.random__conv(0, 0, 1, 1, 3)],
+      self
+    )
     @gfx.rotating = true
   end
 end
 
-class MarkGFX < Triangle
-  attr_accessor :mark
-  
-  # TODO improve this
-  def render
-    super unless @colors.nil?
+class Mouse < OpenGLPrimitive
+  def initialize x, y, size, colors_in, colors_out
+    super x, y, size
+    @colors_in = colors_in
+    @subs << Triangle.new(0, 0, 1, colors_out) << Triangle.new(0, 0, 0.5, @colors_in[1])
   end
   
-  # TODO improve this!
+  def tick dt
+    super dt
+    @subs.last.colors = @colors_in[$game.player]
+  end
+end
+
+class MarkGFX < Triangle
+  
+  def initialize x, y, size, colors, mark
+    super x, y, size, nil
+    @c1 = colors.first
+    @c2 = colors.last
+    @mark = mark
+    @visible = false
+  end
+  
   def tick dt
     super
-    return if @mark.nil? or @mark.player == 0
-    self.pulsing = true if @mark.winner
     
-    if @colors.nil?
-      if @mark.player == 1
-        @colors = Array.new(3) do Color.random(1, 0, 0) end
-      elsif @mark.player == 2
-        @colors = Array.new(3) do Color.random(0, 0, 1) end
-      end
+    if @mark.nil? or @mark.player == 0
+      @visible = false
+      return
+    else
+      @visible = true
+    end
+    
+    self.pulsing = @mark.winner
+    
+    case @mark.player
+    when 1 then self.colors = @c1
+    else self.colors = @c2
     end
   end
 end
@@ -117,7 +137,7 @@ def draw_gl_scene dt
 end
 
 def on_key_down key
-  @m.pulsing = (not @m.pulsing)
+  #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE :
       $running = false
@@ -127,6 +147,9 @@ def on_key_down key
       $game.do_move(a,b) 
       puts $game.to_s
     end
+  when 97 : # A
+    on_key_down(SDL::Key::SPACE)
+    10.times { on_key_down(48) }
   when SDL::Key::SPACE :
       $game = TicTacToe.new
     puts $game.to_s
@@ -179,7 +202,7 @@ end
 def startup
   $game = TicTacToe.new
   puts $game.to_s
-  @m = Triangle.new(100, 100, 100, Color.new(0,1,0,0.7)) #Mouse.new(200,200)
+  @m = Mouse.new(100, 100, 100, [Color.random__conv(0, 0, 0, 0.7, 3), Color.random__conv(1, 0, 0, 0.7, 3), Color.random__conv(0, 0, 1, 0.7, 3)], Color.new(0,1,0,0.7)) #Mouse.new(200,200)
   @m.rotating = true
   @m.pulsing = true
   $image = ImageTexture.new("gfx/pic.png", 512)
