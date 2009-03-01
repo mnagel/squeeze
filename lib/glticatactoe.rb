@@ -53,8 +53,8 @@ class Mouse < OpenGLPrimitive
   def initialize x, y, size, colors_in, colors_out
     super x, y, size
     @colors_in = colors_in
-    shape = Square
-    # shape = Triangle
+    #shape = Square # FIXME!!!
+    shape = Triangle
     @subs << shape.new(0, 0, 1, colors_out)
     @subs.last.subs << Triangle.new(0, 0, 0.5, @colors_in[1])
   end
@@ -73,7 +73,12 @@ class MarkGFX < Triangle
     @c2 = colors.last
     @mark = mark
     @visible = false
-  end
+    
+    subs << Square.new(0, 0, 0.5, Color.random(255, 255, 255, 1))
+    #subs << Picture.new("gfx/a.png", 0, 0, 1, Color.random(255, 255, 255, 1))
+    #subs << Picture.new("gfx/b.png", 0, 0, 1, Color.random(255, 255, 255, 1))
+    subs.each do |s| s.visible = false end
+    end
   
   def tick dt
     super
@@ -83,13 +88,14 @@ class MarkGFX < Triangle
       return
     else
       @visible = true
+      subs.each do |s| s.visible = true end
     end
     
     self.pulsing = @mark.winner
     
     case @mark.player
-    when 1 then self.colors = @c1
-    else self.colors = @c2
+    when 1 then self.colors = @c1; subs.first.gltexture = $p1.handle #subs.first.visible = true;
+    else self.colors = @c2; subs.first.gltexture = $p2.handle # subs.last.visible = true;
     end
   end
 end
@@ -134,21 +140,16 @@ def draw_gl_scene dt
   @m.tick dt
   @m.render
   
-  $image.tick dt
-  $image.render # #100, 100, 0
+#  $image.tick dt
+#  $image.render # #100, 100, 0
   
-  if $bla.nil?
-$bla = [Text.new(60, 60, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo"),
-  Text.new(80, 100, 20, Color.new(1, 255, 255, 1.0), "font2.ttf", "gdfgfdg"),
- Text.new(100, 300, 20, Color.new(255, 0, 0, 1.0), "font.ttf", "kiuoghi")]
-  end
-  
+
 #$bla.each { |x| puts x.gltexture }
 
 
  
   $bla.each do |x| x.render end
- $bla.last.set_text "rendering @#{$fps}fps"
+ $bla.first.set_text "rendering @#{$fps}fps"
 end
 
 $x = false
@@ -223,7 +224,24 @@ def startup
   @m.rotating = true
   @m.pulsing = true
   $image =  Picture.new("gfx/pic.png", 0, 0, 512, Color.new(1.0, 1.0, 1.0, 0.7));
-  #ImageTexture.new("gfx/pic.png", 512)
+  #ImageTexture.new("gfx/pic.png", 512)\
+  
+    #if $bla.nil?
+$bla = [Text.new(5, 5, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo"),
+#  Text.new(80, 100, 20, Color.new(1, 255, 255, 1.0), "font2.ttf", "gdfgfdg"),
+# Text.new(100, 300, 20, Color.new(255, 0, 0, 1.0), "font.ttf", "kiuoghi")
+ 
+ ]
+ # end
+ 
+  $welcome = Text.new(100, 400, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
+  $bla << $welcome
+  
+  $p1 = Texture.new("gfx/a.png")
+  $p2 = Texture.new("gfx/b.png")
+  
+  
+  
 end
 
 run!

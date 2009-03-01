@@ -171,32 +171,70 @@ class Square < OpenGLPrimitive
     end
   end
   
-  attr_accessor :colors
+  attr_accessor :colors, :gltexture
   
   def render
     super do
-      GL.Begin(GL::QUADS)
-      GL.Color(@colors[0].to_a)
-      GL.Vertex3f(-1, -1, 0.0)
-    
-      GL.Color(@colors[1].to_a)
-      GL.Vertex3f(-1, +1, 0.0)
-    
-      GL.Color(@colors[2].to_a)
-      GL.Vertex3f(+1, +1, 0.0)
+      unless @gltexture.nil?
+        GL::Enable(GL::TEXTURE_2D)
+        GL::BindTexture(GL::TEXTURE_2D, @gltexture);
       
-      GL.Color(@colors[3].to_a)
-      GL.Vertex3f(+1, -1, 0.0)
-      GL.End()       
+        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+      end
+      
+      GL::Begin(GL_QUADS);
+      GL.Color(@colors[0].to_a);
+      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0) unless @gltexture.nil?
+      GL.Color(@colors[1].to_a);
+      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0) unless @gltexture.nil?
+      GL.Color(@colors[2].to_a);
+      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0) unless @gltexture.nil?
+      GL.Color(@colors[3].to_a);
+      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) unless @gltexture.nil?
+      GL::End();
+      unless @gltexture.nil?
+        GL::BindTexture(GL::TEXTURE_2D, 0);
+        GL::Disable(GL::TEXTURE_2D)
+      end
     end
   end
 end
 
-class Picture < OpenGLPrimitive
+class Texture
+  def initialize filename
+    #@colors = Array.new(4) do colors end
+    
+    @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
+    
+    @gltexture = GL.GenTextures(1).first;  # dont generate over and over again...
+    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
+    
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+    
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
+      GL::RGBA, GL::UNSIGNED_BYTE, @sdlsurface.pixels);
+    
+    @w = @sdlsurface.w
+    @h = @sdlsurface.h
+    
+    @handle = @gltexture
+    
+    # TODO SDL Surface direkt freigeben    
+    # TODO im FINALIZER
+    # GL::DeleteTextures($texture)
+  end
+  
+  attr_reader :handle, :w, :h
+end
+
+class Picture < Square
+  # TODO allow NON-square pictures!
   # TODO wie geht das mit den :var => value zuweisungen
   def initialize filename, x, y, size, colors
-    super x, y, size * 0.5
-    @colors = Array.new(4) do colors end
+    super x, y, size * 0.5, colors
+    #@colors = Array.new(4) do colors end
     
     @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
     
@@ -215,101 +253,70 @@ class Picture < OpenGLPrimitive
     # TODO SDL Surface direkt freigeben    
     # TODO im FINALIZER
     # GL::DeleteTextures($texture)
-  end
-  
-  def render
-    super do
-      GL::Enable(GL::TEXTURE_2D)
-      GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-      
-      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-    
-      GL::Begin(GL_QUADS);
-      GL.Color(@colors[0].to_a);
-      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0);
-      GL.Color(@colors[1].to_a);
-      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0);
-      GL.Color(@colors[2].to_a);
-      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0);
-      GL.Color(@colors[3].to_a);
-      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0);
-      GL::End();
-      GL::BindTexture(GL::TEXTURE_2D, 0);
-      GL::Disable(GL::TEXTURE_2D)
-    end
-  end    
+  end   
 end
 
+# TODO : inherit from Texturized Rectangle
 # TODO : introduce "colored primitive" class
 class Text < Entity
   
   SDL::TTF.init
-  
   SDL.init(SDL::INIT_VIDEO)
   
   def initialize x, y, size, color, font, text
     super x, y, size
-    #@x = x; @y = y
     @color = color
-    #@size = size
-    @font = SDL::TTF.open(font, @size, index = 0)
+    @font = SDL::TTF.open(font, 20, index = 0)
     set_text text
   end
   
   def set_text(string)
-    #100.times do puts GL.GenTextures(1).first end
     return if @text == string
     @text = string
     @sdlsurface = @font.renderBlendedUTF8(string, @color.r, @color.g, @color.b) # TODO need power of two?
     @w = @sdlsurface.w
     @h = @sdlsurface.h
+    # puts "size is #{@w}x#{@h}"
     @gltexture = GL.GenTextures(1).first;
     
     STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
       create them before init of sdl/opengl has finished?!?" if @gltexture > 3000000
+    STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
     
-      #puts @gltexture
-    reload_pixel_data!
-    #reload_pixel_data!
-    #reload_pixel_data!
-  end
-  
-  attr_reader :gltexture
-  
-  def reload_pixel_data! light = false
-    puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
     GL::BindTexture(GL::TEXTURE_2D, @gltexture);
     GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
     GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
   
-    # FIXME WHY HAS THIS TO BE HERE!?!?
     GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
-      GL::BGRA, GL::UNSIGNED_BYTE, @sdlsurface.pixels) unless light
+      GL::BGRA, GL::UNSIGNED_BYTE, @sdlsurface.pixels)
+    
+    # @subs << Triangle.new(0, 0, 1, Color.new(1.0, 0, 0, 0.5))
   end
-
+  
+  attr_reader :gltexture
+  
   def render
-    GL::Enable(GL::TEXTURE_2D)
-    with_some_matrix do
-      # super do # FIXME ! this should work
-      define_screen
-      reload_pixel_data! false
+    super do
+      GL::Enable(GL::TEXTURE_2D)
+      with_some_matrix do
+        GL::BindTexture(GL::TEXTURE_2D, @gltexture);
+        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
       
-      GL.Translate(@x, @y, 0)
-      w, h = @w, @h
+        h, w = 1, @w.to_f/@h.to_f
     
-      GL::Color(@color.to_a)
-      GL::Begin(GL_QUADS);
-      GL.TexCoord(0, 1); GL.Vertex(0, 0, 0);
-      GL.TexCoord(1, 1); GL.Vertex(w, 0, 0);
-      GL.TexCoord(1, 0); GL.Vertex(w, h, 0);
-      GL.TexCoord(0, 0); GL.Vertex(0, h, 0);
-      GL::End();
+        GL::Color(@color.to_a)
+        GL::Begin(GL_QUADS);
+        GL.TexCoord(0, 1); GL.Vertex(0, 0, 0);
+        GL.TexCoord(1, 1); GL.Vertex(w, 0, 0);
+        GL.TexCoord(1, 0); GL.Vertex(w, h, 0);
+        GL.TexCoord(0, 0); GL.Vertex(0, h, 0);
+        GL::End();
     
-      GL::BindTexture(GL::TEXTURE_2D,0);
-      # end
+        GL::BindTexture(GL::TEXTURE_2D,0);
+      end
+      GL::Disable(GL::TEXTURE_2D)
     end
-    GL::Disable(GL::TEXTURE_2D)
   end
 end
 
