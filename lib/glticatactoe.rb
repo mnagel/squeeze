@@ -53,12 +53,15 @@ class Mouse < OpenGLPrimitive
   def initialize x, y, size, colors_in, colors_out
     super x, y, size
     @colors_in = colors_in
-    @subs << Triangle.new(0, 0, 1, colors_out) << Triangle.new(0, 0, 0.5, @colors_in[1])
+    shape = Square
+    # shape = Triangle
+    @subs << shape.new(0, 0, 1, colors_out)
+    @subs.last.subs << Triangle.new(0, 0, 0.5, @colors_in[1])
   end
   
   def tick dt
     super dt
-    @subs.last.colors = @colors_in[$game.player]
+    @subs.last.subs.last.colors = @colors_in[$game.player]
   end
 end
 
@@ -132,11 +135,25 @@ def draw_gl_scene dt
   @m.render
   
   $image.tick dt
-  #$image.render #100, 100, 0
-  drawtext $font, 1, 0, 255, 10, 10, 0, "rendering @#{$fps}fps"
+  $image.render # #100, 100, 0
+  
+  if $bla.nil?
+$bla = [Text.new(60, 60, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo"),
+  Text.new(80, 100, 20, Color.new(1, 255, 255, 1.0), "font2.ttf", "gdfgfdg"),
+ Text.new(100, 300, 20, Color.new(255, 0, 0, 1.0), "font.ttf", "kiuoghi")]
+  end
+  
+#$bla.each { |x| puts x.gltexture }
+
+
+ 
+  $bla.each do |x| x.render end
+ $bla.last.set_text "rendering @#{$fps}fps"
 end
 
+$x = false
 def on_key_down key
+  $x = (not $x)
   #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE :
@@ -205,7 +222,8 @@ def startup
   @m = Mouse.new(100, 100, 100, [Color.random__conv(0, 0, 0, 0.7, 3), Color.random__conv(1, 0, 0, 0.7, 3), Color.random__conv(0, 0, 1, 0.7, 3)], Color.new(0,1,0,0.7)) #Mouse.new(200,200)
   @m.rotating = true
   @m.pulsing = true
-  $image = ImageTexture.new("gfx/pic.png", 512)
+  $image =  Picture.new("gfx/pic.png", 0, 0, 512, Color.new(1.0, 1.0, 1.0, 0.7));
+  #ImageTexture.new("gfx/pic.png", 512)
 end
 
 run!

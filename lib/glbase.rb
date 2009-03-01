@@ -21,6 +21,11 @@
 
 =end
 
+
+XWINRES = 750
+YWINRES = 750
+FULLSCREEN = 0
+
 require "sdl"
 require "opengl"
 
@@ -65,6 +70,7 @@ class Entity
   end
   
   attr_accessor :x, :y, :size, :visible
+  attr_reader :subs
   
   def render
     with_some_matrix do
@@ -154,6 +160,159 @@ class Triangle < OpenGLPrimitive
   end
 end
 
+class Square < OpenGLPrimitive
+  # TODO wie geht das mit den :var => value zuweisungen
+  def initialize x, y, size, colors
+    super x, y, size
+    if colors.is_a?(Color)
+      @colors = Array.new(4) do Color.random(colors.r, colors.g, colors.b, colors.a) end
+    else
+      @colors = colors
+    end
+  end
+  
+  attr_accessor :colors
+  
+  def render
+    super do
+      GL.Begin(GL::QUADS)
+      GL.Color(@colors[0].to_a)
+      GL.Vertex3f(-1, -1, 0.0)
+    
+      GL.Color(@colors[1].to_a)
+      GL.Vertex3f(-1, +1, 0.0)
+    
+      GL.Color(@colors[2].to_a)
+      GL.Vertex3f(+1, +1, 0.0)
+      
+      GL.Color(@colors[3].to_a)
+      GL.Vertex3f(+1, -1, 0.0)
+      GL.End()       
+    end
+  end
+end
+
+class Picture < OpenGLPrimitive
+  # TODO wie geht das mit den :var => value zuweisungen
+  def initialize filename, x, y, size, colors
+    super x, y, size * 0.5
+    @colors = Array.new(4) do colors end
+    
+    @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
+    
+    @gltexture = GL.GenTextures(1).first;  # dont generate over and over again...
+    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
+    
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+    
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
+      GL::RGBA, GL::UNSIGNED_BYTE, @sdlsurface.pixels);
+    
+    @w = @sdlsurface.w
+    @h = @sdlsurface.h
+    
+    # TODO SDL Surface direkt freigeben    
+    # TODO im FINALIZER
+    # GL::DeleteTextures($texture)
+  end
+  
+  def render
+    super do
+      GL::Enable(GL::TEXTURE_2D)
+      GL::BindTexture(GL::TEXTURE_2D, @gltexture);
+      
+      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+    
+      GL::Begin(GL_QUADS);
+      GL.Color(@colors[0].to_a);
+      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0);
+      GL.Color(@colors[1].to_a);
+      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0);
+      GL.Color(@colors[2].to_a);
+      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0);
+      GL.Color(@colors[3].to_a);
+      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0);
+      GL::End();
+      GL::BindTexture(GL::TEXTURE_2D, 0);
+      GL::Disable(GL::TEXTURE_2D)
+    end
+  end    
+end
+
+# TODO : introduce "colored primitive" class
+class Text < Entity
+  
+  SDL::TTF.init
+  
+  SDL.init(SDL::INIT_VIDEO)
+  
+  def initialize x, y, size, color, font, text
+    super x, y, size
+    #@x = x; @y = y
+    @color = color
+    #@size = size
+    @font = SDL::TTF.open(font, @size, index = 0)
+    set_text text
+  end
+  
+  def set_text(string)
+    #100.times do puts GL.GenTextures(1).first end
+    return if @text == string
+    @text = string
+    @sdlsurface = @font.renderBlendedUTF8(string, @color.r, @color.g, @color.b) # TODO need power of two?
+    @w = @sdlsurface.w
+    @h = @sdlsurface.h
+    @gltexture = GL.GenTextures(1).first;
+    
+    STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
+      create them before init of sdl/opengl has finished?!?" if @gltexture > 3000000
+    
+      #puts @gltexture
+    reload_pixel_data!
+    #reload_pixel_data!
+    #reload_pixel_data!
+  end
+  
+  attr_reader :gltexture
+  
+  def reload_pixel_data! light = false
+    puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
+    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+  
+    # FIXME WHY HAS THIS TO BE HERE!?!?
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
+      GL::BGRA, GL::UNSIGNED_BYTE, @sdlsurface.pixels) unless light
+  end
+
+  def render
+    GL::Enable(GL::TEXTURE_2D)
+    with_some_matrix do
+      # super do # FIXME ! this should work
+      define_screen
+      reload_pixel_data! false
+      
+      GL.Translate(@x, @y, 0)
+      w, h = @w, @h
+    
+      GL::Color(@color.to_a)
+      GL::Begin(GL_QUADS);
+      GL.TexCoord(0, 1); GL.Vertex(0, 0, 0);
+      GL.TexCoord(1, 1); GL.Vertex(w, 0, 0);
+      GL.TexCoord(1, 0); GL.Vertex(w, h, 0);
+      GL.TexCoord(0, 0); GL.Vertex(0, h, 0);
+      GL::End();
+    
+      GL::BindTexture(GL::TEXTURE_2D,0);
+      # end
+    end
+    GL::Disable(GL::TEXTURE_2D)
+  end
+end
+
 
 class Exception
   def show
@@ -161,10 +320,6 @@ class Exception
     STDERR.puts self.backtrace
   end
 end
-
-XWINRES = 750
-YWINRES = 750
-FULLSCREEN = 0
 
 def init_gl_window(width = XWINRES, height = YWINRES)
   GL::Viewport(0,0, width, height)
@@ -187,7 +342,7 @@ def init_gl_window(width = XWINRES, height = YWINRES)
   GL::MatrixMode(GL::MODELVIEW)
 end
 
-def define_screen virtual_x = XWINRES, virtual_y  = YWINRES
+def define_screen virtual_x = XWINRES, virtual_y = YWINRES
   GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,XWINRES,YWINRES);
@@ -195,106 +350,10 @@ def define_screen virtual_x = XWINRES, virtual_y  = YWINRES
   GL::MatrixMode(GL::MODELVIEW);
 end
 
-
-# TODO encapsulate into class
-def drawtext font, r, g, b, x, y, z, text
-
-  GL.Color( r,g,b) 
-  
-  GL.PushMatrix();
-  GL::MatrixMode(GL::PROJECTION);
-  GL::LoadIdentity();
-  GL::Viewport(0,0,XWINRES,YWINRES);
-  GL::Ortho(0,XWINRES,YWINRES,0,0,128);
-  GL::MatrixMode(GL::MODELVIEW);
-  
-
-  surface = font.renderBlendedUTF8(text,r,g, b); # dont generate over and over again
-  
-  $texture = GL.GenTextures(1).first;  # dont generate over and over again...
-  GL::BindTexture(GL::TEXTURE_2D, $texture);
- 
-  GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-  GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
- 
-  GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, surface.w, surface.h, 0, GL::BGRA, GL::UNSIGNED_BYTE, surface.pixels);
-  
-
-  GL::Begin(GL_QUADS);
-  GL.TexCoord2d(0, 0); GL.Vertex3d(x, y, z);
-  GL.TexCoord2d(1, 0); GL.Vertex3d(x+surface.w, y, z);
-  GL.TexCoord2d(1, 1); GL.Vertex3d(x+surface.w, y+surface.h, z);
-  GL.TexCoord2d(0, 1); GL.Vertex3d(x, y+surface.h, z);
-  GL::End();
-        
-  GL::BindTexture(GL::TEXTURE_2D,0);
-
-
-  GL::DeleteTextures($texture)
-  
-  GL.PopMatrix();
-end
-
-class ImageTexture
-  attr_accessor :x, :y
-  
-  def initialize filename, size
-    @x, @y, @z = 0, 0, 0
-    @size = size
-    @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
-    
-    @gltexture = GL.GenTextures(1).first;  # dont generate over and over again...
-    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-    
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-    
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, GL::RGBA, GL::UNSIGNED_BYTE, @sdlsurface.pixels);
-    
-    @w = @sdlsurface.w
-    @h = @sdlsurface.h
-    
-    # TODO SDL Surface direkt freigeben    
-    # TODO im FINALIZER
-    # GL::DeleteTextures($texture)
-  end
-  
-  def render
-    GL.PushMatrix();
-    define_screen
-
-    
-    GL.Color(255, 255, 255, 0.5)
-    GL.Translate(@x, @y, 0)
-    GL.Rotate(@r, 0, 0, 1)
-    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-    
-    t = @size/2
-    
-    GL::Begin(GL_QUADS);
-    GL.TexCoord2d(0, 0); GL.Vertex3d(-t, +t, @z);
-    GL.TexCoord2d(1, 0); GL.Vertex3d(+t, +t, @z);
-    GL.TexCoord2d(1, 1); GL.Vertex3d(+t, -t, @z);
-    GL.TexCoord2d(0, 1); GL.Vertex3d(-t, -t, @z);
-    GL::End();
-    
-    GL::BindTexture(GL::TEXTURE_2D,0);
-    
-    GL.PopMatrix();
-  end
-  
-  def tick dt
-    @mine = 0 if @mine.nil?
-    val = - 0.003 * dt
-    
-    #@o += val
-    @mine += 10*val
-    @r = @mine #Math.sin(@mine);
-  end
-end
-
+$fps = 300
 $dt = 100
 $oldt = Time.now
+$running = false
 def fps
   time = Time.now
   $dt = 1000 * (time - $oldt).to_f
@@ -314,19 +373,15 @@ def fps
 end
 
 def run!
-  SDL.init(SDL::INIT_VIDEO)
-  SDL::TTF.init
 
   $frames = 0
   $time = Time.now
-  $font = SDL::TTF.open("font.ttf", 20, index = 0)
   
   SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
   init_gl_window(XWINRES, YWINRES)
   SDL::Mouse.hide()
   
   startup
-  GL.BindTexture( GL_TEXTURE_2D, 0 );
   
   $running = true
   while $running do
