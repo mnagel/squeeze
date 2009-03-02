@@ -162,7 +162,7 @@ class TicTacToe
   # * returns nil for no winner
   # * returns 1 if player 1 wins
   # * returns 2 if player 2 wins
-  # FIXME no longeer -- if both players won, 1 is returned
+  # CHECK  -- if both players won, 1 is returned
   def check_winner thefield = @field
     winners = []
     

@@ -35,7 +35,6 @@ def with_some_matrix
   GL.PopMatrix();
 end
 
-# TODO make inherit from array...
 class Color
   attr_accessor :r, :g, :b, :a
   
@@ -50,10 +49,6 @@ class Color
       g * (offset + Float.rand(0.2, 0.8)), 
       b * (offset + Float.rand(0.2, 0.8)), 
       a)
-  end
-  
-  def self.random__conv r, g, b, a, n
-    return Array.new(n) { random(r, g, b, a) }
   end
   
   def to_a
@@ -135,11 +130,12 @@ class Triangle < OpenGLPrimitive
   # TODO wie geht das mit den :var => value zuweisungen
   def initialize x, y, size, colors
     super x, y, size
-    if colors.is_a?(Color)
-      @colors = Array.new(3) do Color.random(colors.r, colors.g, colors.b, colors.a) end
-    else
-      @colors = colors
+    @colors = colors
+    unless (@colors.is_a?(Array) and @colors.length == 3)
+      STDERR.puts Exception.new("@colors should be set properly, was #{@colors} when initin #{self}")
+      @colors = Array.new(4) do Color.new(255, 255, 0, 1) end
     end
+    #    end
   end
   
   attr_accessor :colors
@@ -164,10 +160,10 @@ class Square < OpenGLPrimitive
   # TODO wie geht das mit den :var => value zuweisungen
   def initialize x, y, size, colors
     super x, y, size
-    if colors.is_a?(Color)
-      @colors = Array.new(4) do Color.random(colors.r, colors.g, colors.b, colors.a) end
-    else
-      @colors = colors
+    @colors = colors
+    unless (@colors.is_a?(Array) and @colors.length == 4)
+      STDERR.puts Exception.new("@colors should be set properly, was #{@colors} when initin #{self}") 
+      @colors = Array.new(3) do Color.new(255, 255, 0, 1) end
     end
   end
   
@@ -258,7 +254,7 @@ end
 
 # TODO : inherit from Texturized Rectangle
 # TODO : introduce "colored primitive" class
-class Text < Entity
+class Text < OpenGLPrimitive
   
   SDL::TTF.init
   SDL.init(SDL::INIT_VIDEO)
@@ -289,8 +285,6 @@ class Text < Entity
   
     GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
       GL::BGRA, GL::UNSIGNED_BYTE, @sdlsurface.pixels)
-    
-    # @subs << Triangle.new(0, 0, 1, Color.new(1.0, 0, 0, 0.5))
   end
   
   attr_reader :gltexture
@@ -319,7 +313,6 @@ class Text < Entity
     end
   end
 end
-
 
 class Exception
   def show
@@ -357,49 +350,100 @@ def define_screen virtual_x = XWINRES, virtual_y = YWINRES
   GL::MatrixMode(GL::MODELVIEW);
 end
 
-$fps = 300
-$dt = 100
-$oldt = Time.now
-$running = false
-def fps
-  time = Time.now
-  $dt = 1000 * (time - $oldt).to_f
-  $oldt = time
-  
-  #puts $dt
-  
-  $FREQ = 1000
-  $frames += 1
-  if $frames.modulo($FREQ) == 0
-    $timeold = $time
-    $time = Time.now
-    delta = ($time - $timeold).to_f
-    $fps = ($FREQ/delta).to_i
-    # SDL::WM.setCaption "#{$fps} FPS", ""
+class Timer
+  def initialize
+    @last_tick = @rate_tick = Time.now
+    @tickcount = 0
+    @tickrate = 60
+    @running = true
+    @total_time = 0.0
+    @to_call = []
+    @UPDATERATE = 120 # ticks
   end
-end
-
-def run!
-
-  $frames = 0
-  $time = Time.now
   
-  SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
-  init_gl_window(XWINRES, YWINRES)
-  SDL::Mouse.hide()
+  attr_reader :running
   
-  startup
-  
-  $running = true
-  while $running do
-    event = SDL::Event2.poll
-    if !event.nil?
-      sdl_event(event)
-    end
-    fps
-    GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
-    draw_gl_scene $dt
+  def tick
+    time = Time.now
+    delta = @running ? 1000 * (time - @last_tick).to_f : 0.0
+    @last_tick = time
+    @tickcount += 1
     
-    SDL.GLSwapBuffers
+    if @tickcount.modulo(@UPDATERATE) == 0
+      delta2 = (@last_tick - @rate_tick).to_f
+      @rate_tick = @last_tick
+      @tick_rate = (@UPDATERATE / delta2).to_i
+    end
+    
+    @to_call.delete_if { |item| 
+      if item.first < @total_time
+        item.last.call
+        true
+      else
+        false
+      end      
+    }
+    
+    @total_time += delta
+    return delta  
+  end
+  
+  def call_later(delta, &block)
+    @to_call << [@total_time + delta, block]
+  end
+  
+  def ticks_per_second
+    return @tick_rate
+  end
+  
+  def toggle
+    @running ? pause : resume
+  end
+  
+  def pause
+    @running = false
+  end
+  
+  def resume
+    @running = true
+    @last_tick = Time.now
   end
 end
+
+class Engine
+  attr_accessor :running, :timer
+  
+  def initialize
+    @running = true
+    @timer = Timer.new
+    
+    SDL.setVideoMode(XWINRES, YWINRES, 0,
+      (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
+    
+    init_gl_window(XWINRES, YWINRES)
+    SDL::Mouse.hide()
+  end
+  
+  # all stuff ready
+  def prepare 
+    
+  end
+  
+  def run!
+    while @running do
+      until (event = SDL::Event2.poll).nil?
+        sdl_event(event)
+      end
+      
+      GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
+      draw_gl_scene @timer.tick
+      
+      SDL.GLSwapBuffers
+    end
+  end
+  
+  def kill!
+    @running = false
+  end
+end
+

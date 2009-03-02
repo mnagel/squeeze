@@ -41,21 +41,19 @@ class Mark
   
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, 
-      [Color.random__conv(1, 0, 0, 1, 3), Color.random__conv(0, 0, 1, 1, 3)],
-      self
-    )
+    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, self, 
+      :color_p1 => Array.new(3) do Color.random(1, 0, 0) end,  :color_p2 => Array.new(3) do Color.random(0, 0, 1) end)
     @gfx.rotating = true
   end
 end
 
 class Mouse < OpenGLPrimitive
-  def initialize x, y, size, colors_in, colors_out
+  def initialize x, y, size, color_hash
     super x, y, size
-    @colors_in = colors_in
+    @colors_in = color_hash[:colors_in]
     #shape = Square # FIXME!!!
     shape = Triangle
-    @subs << shape.new(0, 0, 1, colors_out)
+    @subs << shape.new(0, 0, 1, color_hash[:colors_out])
     @subs.last.subs << Triangle.new(0, 0, 0.5, @colors_in[1])
   end
   
@@ -67,18 +65,17 @@ end
 
 class MarkGFX < Triangle
   
-  def initialize x, y, size, colors, mark
-    super x, y, size, nil
-    @c1 = colors.first
-    @c2 = colors.last
+  def initialize x, y, size, mark, color_hash
+    puts color_hash
+    super x, y, size, color_hash[:color_p1]
+    @c1 = color_hash[:color_p1]
+    @c2 = color_hash[:color_p2]
     @mark = mark
     @visible = false
     
-    subs << Square.new(0, 0, 0.5, Color.random(255, 255, 255, 1))
-    #subs << Picture.new("gfx/a.png", 0, 0, 1, Color.random(255, 255, 255, 1))
-    #subs << Picture.new("gfx/b.png", 0, 0, 1, Color.random(255, 255, 255, 1))
+    subs << Square.new(0, 0, 0.5, Array.new(4) do Color.random(255, 255, 255) end)
     subs.each do |s| s.visible = false end
-    end
+  end
   
   def tick dt
     super
@@ -94,8 +91,8 @@ class MarkGFX < Triangle
     self.pulsing = @mark.winner
     
     case @mark.player
-    when 1 then self.colors = @c1; subs.first.gltexture = $p1.handle #subs.first.visible = true;
-    else self.colors = @c2; subs.first.gltexture = $p2.handle # subs.last.visible = true;
+    when 1 then self.colors = @c1; subs.first.gltexture = $p1.handle
+    else self.colors = @c2; subs.first.gltexture = $p2.handle
     end
   end
 end
@@ -114,10 +111,10 @@ def draw_grid
     end
   end
   
-  for x in [200,400]
+  for x2 in [200,400]
     GL.Color(  @c)  
-    for y in [50,550]
-      GL.Vertex3f( y, x, 0.0) 
+    for y2 in [50,550]
+      GL.Vertex3f( y2, x2, 0.0) 
       GL.Color(  @d)  
     end
   end
@@ -139,17 +136,9 @@ def draw_gl_scene dt
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.tick dt
   @m.render
-  
-#  $image.tick dt
-#  $image.render # #100, 100, 0
-  
 
-#$bla.each { |x| puts x.gltexture }
-
-
- 
-  $bla.each do |x| x.render end
- $bla.first.set_text "rendering @#{$fps}fps"
+  $bla.each do |x| x.tick dt; x.render end
+  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
 end
 
 $x = false
@@ -158,7 +147,7 @@ def on_key_down key
   #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE :
-      $running = false
+      $engine.kill!
   when 48 : # Zero
     unless $game.gameover?
       a, b = $game.ki_get_move; 
@@ -168,6 +157,8 @@ def on_key_down key
   when 97 : # A
     on_key_down(SDL::Key::SPACE)
     10.times { on_key_down(48) }
+  when 98 : # B
+    $engine.timer.toggle
   when SDL::Key::SPACE :
       $game = TicTacToe.new
     puts $game.to_s
@@ -200,14 +191,11 @@ end
 def on_mouse_move x, y
   @m.x = x
   @m.y = YWINRES-y
-  
-  $image.x = x
-  $image.y = YWINRES - y
 end
 
 def sdl_event event
   if event.is_a?(SDL::Event2::Quit)
-    $running = false
+    $engine.kill!
   elsif event.is_a?(SDL::Event2::KeyDown)
     on_key_down event.sym
   elsif event.is_a?(SDL::Event2::MouseButtonDown)
@@ -217,31 +205,42 @@ def sdl_event event
   end
 end
 
-def startup
+class Engine
+  alias_method :prepare_original, :prepare
+def prepare
+  prepare_original
   $game = TicTacToe.new
-  puts $game.to_s
-  @m = Mouse.new(100, 100, 100, [Color.random__conv(0, 0, 0, 0.7, 3), Color.random__conv(1, 0, 0, 0.7, 3), Color.random__conv(0, 0, 1, 0.7, 3)], Color.new(0,1,0,0.7)) #Mouse.new(200,200)
+#  puts $game.to_s
+  @m = Mouse.new(100, 100, 100, 
+    :colors_in => [
+      Array.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
+      Array.new(3) do Color.random(1, 0, 0) end, # pq
+      Array.new(3) do Color.random(0, 0, 1) end  # p2
+    ],  
+    :colors_out => 
+      Array.new(3) do Color.random(0, 0.8, 0) end)
   @m.rotating = true
   @m.pulsing = true
-  $image =  Picture.new("gfx/pic.png", 0, 0, 512, Color.new(1.0, 1.0, 1.0, 0.7));
-  #ImageTexture.new("gfx/pic.png", 512)\
-  
-    #if $bla.nil?
-$bla = [Text.new(5, 5, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo"),
-#  Text.new(80, 100, 20, Color.new(1, 255, 255, 1.0), "font2.ttf", "gdfgfdg"),
-# Text.new(100, 300, 20, Color.new(255, 0, 0, 1.0), "font.ttf", "kiuoghi")
- 
- ]
- # end
+
+  $bla = [Text.new(5, 5, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo")]
  
   $welcome = Text.new(100, 400, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
+  $welcome.pulsing = true
+  $engine.timer.call_later(3000) do $welcome.visible = false end
   $bla << $welcome
   
   $p1 = Texture.new("gfx/a.png")
   $p2 = Texture.new("gfx/b.png")
-  
-  
-  
+end
 end
 
-run!
+begin
+$engine = Engine.new
+$engine.prepare
+$engine.run!
+rescue => exc
+  STDERR.puts "there was an error: #{exc.message}"
+  STDERR.puts exc.backtrace
+end
+
+
