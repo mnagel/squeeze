@@ -133,6 +133,7 @@ class TicTacToe
       item.is_winner!
     end unless check_winner.nil?
     
+    # TODO add on_win and show  winnner in gl there :)
     @player = @player == 1 ? 2 : 1
     @player = 0 if gameover?
   end
