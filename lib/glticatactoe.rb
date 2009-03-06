@@ -21,6 +21,9 @@
 
 =end
 
+# TODO make winners rotate
+# TODO add pulsing
+
 require "sdl"
 require "opengl"
 
@@ -41,39 +44,95 @@ class Mark
   
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(100+(x)*200,100+((2-y))*200, 80, self, 
-      :color_p1 => Array.new(3) do Color.random(1, 0, 0) end,  :color_p2 => Array.new(3) do Color.random(0, 0, 1) end)
-    @gfx.rotating = true
+    @gfx = MarkGFX.new(100+(x)*200,100+y*200, 80, self, 
+      :color_p1 => ColorList.new(3) do Color.random(1, 0, 0) end,  
+      :color_p2 => ColorList.new(3) do Color.random(0, 0, 1) end)
+    @gfx.extend(Pulsing)
+    @gfx.reinit
+    @gfx.pulsing = false
   end
 end
 
-class Mouse < OpenGLPrimitive
+class TicTacToe
+  alias_method(:gw_old, :on_game_won)
+  
+  def on_game_won winner, winning_stones
+    gw_old winner, winning_stones
+    winning_stones.each { |item| 
+      item.gfx.pulsing = true
+    }
+    
+    $foobar = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(0, 255, 0, 0.8), "font.ttf", "PLAYER #{winner} WINS!")
+    $foobar.extend(Pulsing)
+    $foobar.reinit
+    $welcome.visible = false
+    $engine.timer.call_later(3000) do $foobar = nil end
+  end
+  
+  alias_method(:gs_old, :on_game_start)
+      
+  def on_game_start
+    gs_old
+    return if $welcome.nil?
+    $engine.timer.wipe!
+    $welcome.visible = true
+    $engine.timer.call_later(3000) do $welcome.visible = false end
+  end
+
+  
+   
+end
+
+class Mouse < Entity
+  
+  
+  include Rotating
+  
   def initialize x, y, size, color_hash
-    super x, y, size
+    super x, y, size, size
     @colors_in = color_hash[:colors_in]
     #shape = Square # FIXME!!!
     shape = Triangle
-    @subs << shape.new(0, 0, 1, color_hash[:colors_out])
-    @subs.last.subs << Triangle.new(0, 0, 0.5, @colors_in[1])
+    @colors = color_hash[:colors_out]
+    @subs << shape.new(0, 0, 1, 1)
+    @subs.first.colors =  color_hash[:colors_out]  # ColorList.new(3) do |i| Color.random(0.0, 1.0, 0.0, 0.5) end
+
+    @subs.last.subs << Triangle.new(0, 0, 0.5,0.5)
+    # TODO add a sub to  this triangle that contains the picture of the player...
+    @bla = Square.new(0, 0, 0.8)
+    @bla.texture = $p1 #Texture.new($p1, 800, 800)
+    a = 1.0
+    @bla.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end 
+    @subs.last.subs.last.subs << @bla
+    
+    @rotating = true
   end
   
   def tick dt
     super dt
     @subs.last.subs.last.colors = @colors_in[$game.player]
+    foo = [Texture.none, $p1, $p2]
+    @bla.texture = foo[$game.player]
+    @bla.visible = $game.player != 0
   end
+  
 end
 
 class MarkGFX < Triangle
+  include Rotating
   
   def initialize x, y, size, mark, color_hash
-    puts color_hash
-    super x, y, size, color_hash[:color_p1]
+    # puts color_hash
+    super x, y, size, size # color_hash[:color_p1]
     @c1 = color_hash[:color_p1]
     @c2 = color_hash[:color_p2]
     @mark = mark
     @visible = false
     
-    subs << Square.new(0, 0, 0.5, Array.new(4) do Color.random(255, 255, 255) end)
+    @rotating = true
+    
+    subs << Square.new(0, 0, 0.5)
+    subs.first.colors = ColorList.new(4) do Color.random(255, 255, 255) end
     subs.each do |s| s.visible = false end
   end
   
@@ -88,11 +147,9 @@ class MarkGFX < Triangle
       subs.each do |s| s.visible = true end
     end
     
-    self.pulsing = @mark.winner
-    
     case @mark.player
-    when 1 then self.colors = @c1; subs.first.gltexture = $p1.handle
-    else self.colors = @c2; subs.first.gltexture = $p2.handle
+    when 1 then self.colors = @c1; subs.first.texture = $p1
+    else self.colors = @c2; subs.first.texture = $p2
     end
   end
 end
@@ -136,9 +193,14 @@ def draw_gl_scene dt
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.tick dt
   @m.render
+  
+  unless $foobar.nil?
+    $foobar.tick dt
+    $foobar.render
+  end
 
   $bla.each do |x| x.tick dt; x.render end
-  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
+  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps" #  #{a = ''; rand(3).times { a+= "xxx"}; a}"
 end
 
 $x = false
@@ -190,7 +252,7 @@ end
 
 def on_mouse_move x, y
   @m.x = x
-  @m.y = YWINRES-y
+  @m.y = y # YWINRES-y
 end
 
 def sdl_event event
@@ -205,42 +267,71 @@ def sdl_event event
   end
 end
 
+module Mine
+  def hack
+    super
+    puts "hack"
+  end
+
+end
+
 class Engine
   alias_method :prepare_original, :prepare
-def prepare
-  prepare_original
-  $game = TicTacToe.new
-#  puts $game.to_s
-  @m = Mouse.new(100, 100, 100, 
-    :colors_in => [
-      Array.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
-      Array.new(3) do Color.random(1, 0, 0) end, # pq
-      Array.new(3) do Color.random(0, 0, 1) end  # p2
-    ],  
-    :colors_out => 
-      Array.new(3) do Color.random(0, 0.8, 0) end)
-  @m.rotating = true
-  @m.pulsing = true
+  def prepare
+    prepare_original
+    $game = TicTacToe.new
+    #    puts $game.to_s
 
-  $bla = [Text.new(5, 5, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "hallo")]
- 
-  $welcome = Text.new(100, 400, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
-  $welcome.pulsing = true
-  $engine.timer.call_later(3000) do $welcome.visible = false end
-  $bla << $welcome
   
-  $p1 = Texture.new("gfx/a.png")
-  $p2 = Texture.new("gfx/b.png")
+    $p1 = Texture.load_file("gfx/a.png")
+    $p2 = Texture.load_file("gfx/b.png")
+    @m = Mouse.new(100, 100, 100, 
+      :colors_in => [
+        ColorList.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
+        ColorList.new(3) do Color.random(1, 0, 0) end, # pq
+        ColorList.new(3) do Color.random(0, 0, 1) end  # p2
+      ],  
+      :colors_out => 
+        ColorList.new(3) do Color.random(0, 0.8, 0) end)
+
+    @m.extend(Rotating)
+
+
+    $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "FPS GO HERE")]
+  
+    $bla.first.extend(TopLeftPositioning)
+ 
+    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
+    $engine.timer.call_later(3000) do $welcome.visible = false end
+    $bla << $welcome
+  
+    $welcome.extend(Pulsing)
+    $welcome.reinit
+  
+  end
 end
-end
+
+# TODO : do not profile always...
+
+require 'ruby-prof'
+
+# Profile the code
+RubyProf.start
+
 
 begin
-$engine = Engine.new
-$engine.prepare
-$engine.run!
+  $engine = Engine.new
+  $engine.prepare
+  $engine.run!
 rescue => exc
   STDERR.puts "there was an error: #{exc.message}"
   STDERR.puts exc.backtrace
 end
+
+result = RubyProf.stop
+
+# Print a flat profile to text
+printer = RubyProf::FlatPrinter.new(result)
+printer.print(STDOUT, 0)
 
 

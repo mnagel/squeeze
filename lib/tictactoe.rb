@@ -21,6 +21,8 @@
 
 =end
 
+# TODO check id is replaced above...
+
 # the Matrix class is used to store two dimensional data
 class Matrix
   # x, y:: the size of the matrix
@@ -84,6 +86,7 @@ class TicTacToe
   def initialize
     @field = Matrix.new(3,3){|i,j| Mark.new(i,j) }
     @player = 1
+    on_game_start
   end
   
   # prints the field, with the board on the left and a list of possible moves
@@ -124,14 +127,26 @@ class TicTacToe
       end
     end
   end
+  
+  def on_game_start
+    
+  end
+  
+  def on_game_won winner, winning_stones
+    puts "#{winner} won the game"
+        
+    winning_stones.each do |item|
+      item.is_winner!
+    end
+  end
 
   # switch players, get a valid move and update the field according to the move
   def do_move x,y
     return unless is_valid_move(x,y)
     @field[x][y].player = @player
-    check_winner.each do |item|
-      item.is_winner!
-    end unless check_winner.nil?
+    unless (w = check_winner).nil?
+      on_game_won  w.first.player, w
+    end
     
     # TODO add on_win and show  winnner in gl there :)
     @player = @player == 1 ? 2 : 1

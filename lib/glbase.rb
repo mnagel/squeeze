@@ -21,19 +21,11 @@
 
 =end
 
+# TODO use ruby 1.9
+# TODO kill all todos...
+# TODO finalizers, private attributes, getters, setters ...
 
-XWINRES = 750
-YWINRES = 750
-FULLSCREEN = 0
-
-require "sdl"
-require "opengl"
-
-def with_some_matrix
-  GL.PushMatrix();
-  yield if block_given?
-  GL.PopMatrix();
-end
+# TODO document!!!
 
 class Color
   attr_accessor :r, :g, :b, :a
@@ -42,276 +34,309 @@ class Color
     @r, @g, @b, @a = r, g, b, a
   end
   
-  def self.random r, g, b, a = 1
-    offset = 0.2
+  def self.random r, g, b, a=1
+    min =     0.2
+    max = 1 - min
     return self.new(
-      r * (offset + Float.rand(0.2, 0.8)), 
-      g * (offset + Float.rand(0.2, 0.8)), 
-      b * (offset + Float.rand(0.2, 0.8)), 
+      r * (min + Float.rand(min, max)), 
+      g * (min + Float.rand(min, max)), 
+      b * (min + Float.rand(min, max)), 
       a)
   end
   
   def to_a
+    # TODO : dont create array, but have it all the time and reuse it (create as_a method!)
     return [@r, @g, @b, @a]
   end
 end
 
-class Entity
-  def initialize x, y, size
-    @x, @y, @size = x, y, size
-    
-    @subs = []
-    @visible = true
-  end
+class ColorList
+  attr_accessor :vals
   
-  attr_accessor :x, :y, :size, :visible
-  attr_reader :subs
-  
-  def render
-    with_some_matrix do
-      GL.Translate(@x, @y, 0)
-      GL.Scale(@size,@size,1)
-    
-      yield if block_given?
-  
-      @subs.each { |sub| sub.render }
-      
-    end if @visible
-  end
-  
-  def tick dt
-    @subs.each { |sub| sub.tick dt }
-  end
-end
-
-class OpenGLPrimitive < Entity
-  def initialize x, y, size
-    super x, y, size
-    @max_size = size
-    
-    @rotation = 0
-    @pulse = 0
-    @rotating = false
-    @pulsing = false
-  end
-  
-  def rotating=(bool)
-    puts "setting rotation to #{bool} for #{self.class}"
-    @rotating = bool
-  end
-  
-  def pulsing=(bool)
-    @pulsing = bool
-  end
-  
-  attr_reader :pulsing
-  
-  def tick dt
-    super dt
-    val = 0.003 * dt
-    
-    @rotation += 10 * val if @rotating
-    @pulse += val if @pulsing
-    sin = Math.cos(@pulse)
-    @size = @max_size * 0.5 * (1 + sin * sin)
-  end
-  
-  def render
-    with_some_matrix do
-      super do
-        GL.Rotate(@rotation, 0, 0, 1)
-        yield if block_given?
+  def initialize len, &code
+    @vals = Array.new(len) do |index| code.call(index) end
+    if len < 3 and
+        puts "WARNING, you dont want to have a color-list this short..."
+      begin
+        throw Exception.new
+      rescue => e
+        # e.show
       end
     end
   end
+  
+  def as_a
+    return @vals
+  end
 end
 
-class Triangle < OpenGLPrimitive
-  # TODO wie geht das mit den :var => value zuweisungen
-  def initialize x, y, size, colors
-    super x, y, size
-    @colors = colors
-    unless (@colors.is_a?(Array) and @colors.length == 3)
-      STDERR.puts Exception.new("@colors should be set properly, was #{@colors} when initin #{self}")
-      @colors = Array.new(4) do Color.new(255, 255, 0, 1) end
-    end
-    #    end
+class Texture
+  attr_accessor :gl_handle, :w, :h
+  
+  def kill!
+    GL.DeleteTextures @gl_handle
   end
   
-  attr_accessor :colors
+  # TODO : remember to call kill!() at the end -- have it have some kind of finalizer
+  def initialize handle, w, h
+    @gl_handle, @w, @h = handle, w, h
+  end
+  
+  def self.load_file filename
+    sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
+    
+    my_gl_handle = GL.GenTextures(1).first;  # dont generate over and over again...
+    GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
+    
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+    
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, sdlsurface.w, sdlsurface.h, 0, 
+      GL::RGBA, GL::UNSIGNED_BYTE, sdlsurface.pixels);
+    
+    my_w, my_h = sdlsurface.w, sdlsurface.h
+    
+    return self.new(my_gl_handle, my_w, my_h)
+    
+    # TODO SDL Surface direkt freigeben    
+    # TODO im FINALIZER
+    # GL::DeleteTextures($texture)
+  end
+  
+  def self.render_text string, color, font # TODO : is color needed or is it set by opengl afterwards?
+    sdlsurface = font.renderBlendedUTF8(string, color.r, color.g, color.b) # TODO need power of two?
+    my_gl_handle = GL.GenTextures(1).first;
+    
+    STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
+      create them before init of sdl/opengl has finished?!?" if my_gl_handle > 3000000
+    STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
+    
+    GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+  
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, sdlsurface.w, sdlsurface.h, 0, 
+      GL::BGRA, GL::UNSIGNED_BYTE, sdlsurface.pixels)
+    
+    my_w, my_h = sdlsurface.w, sdlsurface.h
+    return self.new(my_gl_handle, my_w, my_h)
+  end
+  
+  def self.none
+    return self.new(0, 0, 0) # TODO : cache this!
+  end
+end
+
+class Entity
+  attr_accessor :x, :y, :z, :w, :h, :r, :parent, :subs, :visible # TODO : make "compositum" mixin
+  
+  def initialize x, y, w, h
+    @x, @y, @w, @h = x, y, w, h
+    @z = 0
+    @r = 0
+    
+    @visible = true
+    @parent = nil
+    @subs = []
+  end
+  
+  def tick dt
+    @subs.each do |sub| sub.tick dt end
+    # puts "ticking" if is_a?(Mouse)
+  end
   
   def render
+    with_some_matrix do
+      if @colors.nil?
+        puts "WARNING: @color == nil for #{self}, resetting"
+        @colors = ColorList.new(4) { |i| Color.new(1.0, 0, 1.0, 0.8) }
+      end
+      translate; scale; rotate;
+      yield if block_given?      
+      @subs.each do |sub| sub.render end
+    end if @visible
+  end
+  
+  def translate
+    GL.Translate(@x, @y, @z)
+  end
+  
+  def scale
+    GL.Scale(@w, @h, 1)
+  end
+  
+  def rotate
+    GL.Rotate(@r,0,0,1)
+    # puts "rotated #{@r}" if is_a?(Mouse)
+  end
+  
+  def addsub sub
+    @subs << sub
+    sub.parent = self
+  end
+end
+
+class OpenGL2D < Entity
+  attr_accessor :colors, :texture
+  
+  def initialize x, y, w, h
+    super x, y, w, h
+    # @colors = nil
+    # @colors = ColorList.new(4) { |i| Color.random(1.0, 1.0, 1.0, 1.0) }
+    # puts "Warning, generating random color!"
+    # @colors = 
+    @texture = Texture.none
+  end
+end
+
+class Rect < OpenGL2D
+  def render
     super do
+      #unless @gltexture.nil?
+      GL::Enable(GL::TEXTURE_2D)
+      GL::BindTexture(GL::TEXTURE_2D, @texture.gl_handle);
+      
+      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+      GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+      #end
+      
+      GL::Begin(GL_QUADS);
+      GL.Color(@colors.as_a[0].to_a);
+      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
+      GL.Color(@colors.as_a[1].to_a);
+      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
+      GL.Color(@colors.as_a[2].to_a);
+      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
+      GL.Color(@colors.as_a[3].to_a);
+      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
+      GL::End();
+      #unless @texture.nil?
+      GL::BindTexture(GL::TEXTURE_2D, 0);
+      GL::Disable(GL::TEXTURE_2D)
+      #end
+    end
+  end
+end
+
+class Square < Rect
+  def initialize x, y, size
+    super x, y, size, size
+  end
+end
+
+class Triangle < OpenGL2D
+  def render
+    super do
+      
       GL.Begin(GL::TRIANGLES)
-      GL.Color(@colors[0].to_a)
+      GL.Color(@colors.as_a[0].to_a)
       GL.Vertex3f(-1, -TAN30, 0.0)
-    
-      GL.Color(@colors[1].to_a)
+      
+      GL.Color(@colors.as_a[1].to_a)
       GL.Vertex3f(0, 2*TAN30, 0.0)
-    
-      GL.Color(@colors[2].to_a)
+      
+      GL.Color(@colors.as_a[2].to_a)
       GL.Vertex3f(1, -TAN30, 0.0)
       GL.End()       
     end
   end
 end
 
-class Square < OpenGLPrimitive
-  # TODO wie geht das mit den :var => value zuweisungen
-  def initialize x, y, size, colors
-    super x, y, size
-    @colors = colors
-    unless (@colors.is_a?(Array) and @colors.length == 4)
-      STDERR.puts Exception.new("@colors should be set properly, was #{@colors} when initin #{self}") 
-      @colors = Array.new(3) do Color.new(255, 255, 0, 1) end
-    end
-  end
-  
-  attr_accessor :colors, :gltexture
-  
-  def render
-    super do
-      unless @gltexture.nil?
-        GL::Enable(GL::TEXTURE_2D)
-        GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-      
-        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-      end
-      
-      GL::Begin(GL_QUADS);
-      GL.Color(@colors[0].to_a);
-      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0) unless @gltexture.nil?
-      GL.Color(@colors[1].to_a);
-      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0) unless @gltexture.nil?
-      GL.Color(@colors[2].to_a);
-      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0) unless @gltexture.nil?
-      GL.Color(@colors[3].to_a);
-      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) unless @gltexture.nil?
-      GL::End();
-      unless @gltexture.nil?
-        GL::BindTexture(GL::TEXTURE_2D, 0);
-        GL::Disable(GL::TEXTURE_2D)
-      end
-    end
-  end
-end
+MYVAL = 40
+MYVAL2 = 3
 
-class Texture
-  def initialize filename
-    #@colors = Array.new(4) do colors end
+class Text < Rect
+  
+  attr_accessor :text # TODO settext method update texture...
+  
+  def set_text text
+    @texture.kill! unless @texture.nil?
+    # re render texture
+    @texture = Texture.render_text(text, @color, @font)
+    @h, @w = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
     
-    @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
-    
-    @gltexture = GL.GenTextures(1).first;  # dont generate over and over again...
-    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-    
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-    
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
-      GL::RGBA, GL::UNSIGNED_BYTE, @sdlsurface.pixels);
-    
-    @w = @sdlsurface.w
-    @h = @sdlsurface.h
-    
-    @handle = @gltexture
-    
-    # TODO SDL Surface direkt freigeben    
-    # TODO im FINALIZER
-    # GL::DeleteTextures($texture)
+    @w = @texture.w * @size / (MYVAL * MYVAL2) #size
+    @h = @texture.h  * @size / (MYVAL * MYVAL2) #size
   end
-  
-  attr_reader :handle, :w, :h
-end
-
-class Picture < Square
-  # TODO allow NON-square pictures!
-  # TODO wie geht das mit den :var => value zuweisungen
-  def initialize filename, x, y, size, colors
-    super x, y, size * 0.5, colors
-    #@colors = Array.new(4) do colors end
-    
-    @sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
-    
-    @gltexture = GL.GenTextures(1).first;  # dont generate over and over again...
-    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-    
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-    
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
-      GL::RGBA, GL::UNSIGNED_BYTE, @sdlsurface.pixels);
-    
-    @w = @sdlsurface.w
-    @h = @sdlsurface.h
-    
-    # TODO SDL Surface direkt freigeben    
-    # TODO im FINALIZER
-    # GL::DeleteTextures($texture)
-  end   
-end
-
-# TODO : inherit from Texturized Rectangle
-# TODO : introduce "colored primitive" class
-class Text < OpenGLPrimitive
-  
-  SDL::TTF.init
-  SDL.init(SDL::INIT_VIDEO)
   
   def initialize x, y, size, color, font, text
-    super x, y, size
     @color = color
-    @font = SDL::TTF.open(font, 20, index = 0)
+    @size = size
+    @colors = ColorList.new(4) { |i| color } # FIXME shorten the list...
+    @font = SDL::TTF.open(font, MYVAL, index = 0)
     set_text text
+    t = @texture
+    super x, y, @w, @h
+    @texture = t
+    #puts "@w is #{@w}, @h is #{@h}"
+    
+    @w = @texture.w* @size / (MYVAL * MYVAL2)  #size
+    @h = @texture.h * @size / (MYVAL * MYVAL2)#size
+    #
+    #puts "@w is #{@w}, @h is #{@h}"
+    #@w = @texture.w
+    #@h = @texture.h
+  end
+end
+
+module Rotating
+  def tick dt
+    super
+    val = 0.003 * dt
+    
+    @r += 10 * val if @rotating
+    # puts "rotating"
+  end
+end
+  
+module Pulsing
+   
+  def reinit # FIXME auto-call in include/extend
+    @pulse = 0
+    @pulsing = true
+    @max_h = @h
+    @max_w = @w
   end
   
-  def set_text(string)
-    return if @text == string
-    @text = string
-    @sdlsurface = @font.renderBlendedUTF8(string, @color.r, @color.g, @color.b) # TODO need power of two?
-    @w = @sdlsurface.w
-    @h = @sdlsurface.h
-    # puts "size is #{@w}x#{@h}"
-    @gltexture = GL.GenTextures(1).first;
+  def tick dt
+
+    super
+    return unless @pulsing
+    val = 0.003 * dt
     
-    STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
-      create them before init of sdl/opengl has finished?!?" if @gltexture > 3000000
-    STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
-    
-    GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-  
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, @sdlsurface.w, @sdlsurface.h, 0, 
-      GL::BGRA, GL::UNSIGNED_BYTE, @sdlsurface.pixels)
+    @pulse += val
+    sin = Math.cos(@pulse)
+    #puts "sin #{sin}, @max_w #{@max_w}, @max_h #{@max_h}"
+    @w = @max_w * 0.5 * (1 + sin * sin)
+    @h = @max_h * 0.5 * (1 + sin * sin)
   end
   
-  attr_reader :gltexture
+  attr_accessor :pulse, :pulsing
+end
   
-  def render
-    super do
-      GL::Enable(GL::TEXTURE_2D)
-      with_some_matrix do
-        GL::BindTexture(GL::TEXTURE_2D, @gltexture);
-        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-        GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-      
-        h, w = 1, @w.to_f/@h.to_f
-    
-        GL::Color(@color.to_a)
-        GL::Begin(GL_QUADS);
-        GL.TexCoord(0, 1); GL.Vertex(0, 0, 0);
-        GL.TexCoord(1, 1); GL.Vertex(w, 0, 0);
-        GL.TexCoord(1, 0); GL.Vertex(w, h, 0);
-        GL.TexCoord(0, 0); GL.Vertex(0, h, 0);
-        GL::End();
-    
-        GL::BindTexture(GL::TEXTURE_2D,0);
-      end
-      GL::Disable(GL::TEXTURE_2D)
-    end
+module TopLeftPositioning
+  def translate
+    super
+    GL.Translate(@w, @h, 0)
   end
+end
+
+XWINRES = 750
+YWINRES = 750
+FULLSCREEN = 0
+
+require "sdl"
+require "opengl"
+
+  
+SDL::TTF.init
+SDL.init(SDL::INIT_VIDEO)
+
+
+def with_some_matrix
+  GL.PushMatrix();
+  yield if block_given?
+  GL.PopMatrix();
 end
 
 class Exception
@@ -346,7 +371,7 @@ def define_screen virtual_x = XWINRES, virtual_y = YWINRES
   GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,XWINRES,YWINRES);
-  GL::Ortho(0,virtual_x,0,virtual_y,0,128);
+  GL::Ortho(0,virtual_x,virtual_y,0,0,128);
   GL::MatrixMode(GL::MODELVIEW);
 end
 
@@ -390,6 +415,11 @@ class Timer
   
   def call_later(delta, &block)
     @to_call << [@total_time + delta, block]
+  end
+  
+  def wipe! call_all = true
+    @to_call.each { |item| item.last.call } if call_all
+    @to_call.clear
   end
   
   def ticks_per_second
