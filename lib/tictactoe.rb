@@ -21,8 +21,6 @@
 
 =end
 
-# TODO check if id is replaced above...
-
 # the Matrix class is used to store two dimensional data
 class Matrix
   # x, y:: the size of the matrix

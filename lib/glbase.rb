@@ -22,6 +22,21 @@
 
 =end
 
+XWINRES = 750
+YWINRES = 750
+FULLSCREEN = 0
+TITLE = "gl base supported application"
+
+    UPDATERATE = 120 # ticks
+    
+
+# FIXME rename...
+MYVAL = 40
+MYVAL2 = 3
+
+require "sdl"
+require "opengl"
+
 # TODO finalizers, private attributes, getters, setters ...
 # TODO document!!!
 
@@ -105,32 +120,14 @@ class Texture
   end
   
   # TODO : remember to call kill!() at the end -- have it have some kind of finalizer
+  
+    # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die texture nur hier verwendet wird!
   def initialize handle, w, h
     @gl_handle, @w, @h = handle, w, h
   end
   
-  def self.load_file filename
-    sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
-    
-    my_gl_handle = GL.GenTextures(1).first;  # dont generate over and over again...
-    GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
-    
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-    
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, sdlsurface.w, sdlsurface.h, 0, 
-      GL::RGBA, GL::UNSIGNED_BYTE, sdlsurface.pixels);
-    
-    my_w, my_h = sdlsurface.w, sdlsurface.h
-    
-    return self.new(my_gl_handle, my_w, my_h)
-    
-    # TODO im FINALIZER # GL::DeleteTextures($texture)
-  end
-  
-  def self.render_text string, font 
-    sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255) # white, because color is set in opengl afterwards
-    my_gl_handle = GL.GenTextures(1).first;
+  def self.from_sdl_surface surf, swapcolors = false
+        my_gl_handle = GL.GenTextures(1).first;
     
     STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
       create them before init of sdl/opengl has finished?!?" if my_gl_handle > 3000000
@@ -140,11 +137,23 @@ class Texture
     GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
     GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
   
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, sdlsurface.w, sdlsurface.h, 0, 
-      GL::BGRA, GL::UNSIGNED_BYTE, sdlsurface.pixels)
+    val = swapcolors ? GL::BGRA : GL::RGBA
+    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, surf.w, surf.h, 0, 
+      val, GL::UNSIGNED_BYTE, surf.pixels)
     
-    my_w, my_h = sdlsurface.w, sdlsurface.h
+    my_w, my_h = surf.w, surf.h
     return self.new(my_gl_handle, my_w, my_h)
+  end
+  
+  def self.load_file filename
+    sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
+    return self.from_sdl_surface(sdlsurface, false)
+    
+  end
+  
+  def self.render_text string, font 
+    sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255) # white, because color is set in opengl afterwards
+    return self.from_sdl_surface(sdlsurface, true)
   end
   
   @@none = self.new(0, 0, 0)
@@ -168,7 +177,6 @@ class Entity
   
   def tick dt
     @subs.each do |sub| sub.tick dt end
-    # puts "ticking" if is_a?(Mouse)
   end
   
   def render
@@ -193,7 +201,6 @@ class Entity
   
   def rotate
     GL.Rotate(@r,0,0,1)
-    # puts "rotated #{@r}" if is_a?(Mouse)
   end
   
   def addsub sub
@@ -207,10 +214,6 @@ class OpenGL2D < Entity
   
   def initialize x, y, w, h
     super x, y, w, h
-    # @colors = nil
-    # @colors = ColorList.new(4) { |i| Color.random(1.0, 1.0, 1.0, 1.0) }
-    # puts "Warning, generating random color!"
-    # @colors = 
     @texture = Texture.none
   end
 end
@@ -268,15 +271,7 @@ class Triangle < OpenGL2D
   end
 end
 
-MYVAL = 40
-MYVAL2 = 3
-
 class Text < Rect
-  
-  private
-  
-  public
-  
   attr_reader :text
   
   def set_text text
@@ -299,30 +294,23 @@ class Text < Rect
     t = @texture
     super x, y, @w, @h
     @texture = t
-    #puts "@w is #{@w}, @h is #{@h}"
     
-    @w = @texture.w* @size / (MYVAL * MYVAL2)  #size
-    @h = @texture.h * @size / (MYVAL * MYVAL2)#size
-    #
-    #puts "@w is #{@w}, @h is #{@h}"
-    #@w = @texture.w
-    #@h = @texture.h
+    @w = @texture.w* @size / (MYVAL * MYVAL2)
+    @h = @texture.h * @size / (MYVAL * MYVAL2)
   end
 end
 
 module Rotating
   def tick dt
-    super
-    val = 0.003 * dt
+    super; return unless @rotating
     
-    @r += 10 * val if @rotating
-    # puts "rotating"
+    @r += 0.03 * dt 
   end
 end
 
 module Pulsing
-  
-  def reinit # FIXME auto-call in include/extend
+  # FIXME auto-call in include/extend
+  def reinit
     @pulse = 0
     @pulsing = true
     @max_h = @h
@@ -330,14 +318,10 @@ module Pulsing
   end
     
   def tick dt
-
-    super
-    return unless @pulsing
-    val = 0.003 * dt
-      
-    @pulse += val
+    super; return unless @pulsing
+ 
+    @pulse += 0.003 * dt
     sin = Math.cos(@pulse)
-    #puts "sin #{sin}, @max_w #{@max_w}, @max_h #{@max_h}"
     @w = @max_w * 0.5 * (1 + sin * sin)
     @h = @max_h * 0.5 * (1 + sin * sin)
   end
@@ -352,15 +336,6 @@ module TopLeftPositioning
   end
 end
 
-XWINRES = 750
-YWINRES = 750
-FULLSCREEN = 0
-TITLE = "gl base supported application"
-
-require "sdl"
-require "opengl"
-
-  
 SDL::TTF.init
 SDL.init(SDL::INIT_VIDEO)
 
@@ -409,13 +384,12 @@ end
 
 class Timer
   def initialize
-    @last_tick = @rate_tick = Time.now
-    @tickcount = 0
-    @tick_rate = 60
     @running = true
+    @last_tick = @tick_rate_ref = Time.now
+    @tick_count = 0
+    @tick_rate = 60
     @total_time = 0.0
-    @to_call = []
-    @UPDATERATE = 120 # ticks
+    @hooks = []
   end
   
   attr_reader :running
@@ -424,15 +398,15 @@ class Timer
     time = Time.now
     delta = @running ? 1000 * (time - @last_tick).to_f : 0.0
     @last_tick = time
-    @tickcount += 1
+    @tick_count += 1
     
-    if @tickcount.modulo(@UPDATERATE) == 0
-      delta2 = (@last_tick - @rate_tick).to_f
-      @rate_tick = @last_tick
-      @tick_rate = (@UPDATERATE / delta2).to_i
+    if @tick_count.modulo(UPDATERATE) == 0
+      delta2 = (@last_tick - @tick_rate_ref).to_f
+      @tick_rate_ref = @last_tick
+      @tick_rate = (UPDATERATE / delta2).to_i
     end
     
-    @to_call.delete_if { |item| 
+    @hooks.delete_if { |item| 
       if item.first < @total_time
         item.last.call
         true
@@ -446,12 +420,12 @@ class Timer
   end
   
   def call_later(delta, &block)
-    @to_call << [@total_time + delta, block]
+    @hooks << [@total_time + delta, block]
   end
   
   def wipe! call_all = true
-    @to_call.each { |item| item.last.call } if call_all
-    @to_call.clear
+    @hooks.each { |item| item.last.call } if call_all
+    @hooks.clear
   end
   
   def ticks_per_second
@@ -476,23 +450,17 @@ class Engine
   attr_accessor :running, :timer
   
   def initialize
-    @running = true
     @timer = Timer.new
     
-    SDL.setVideoMode(XWINRES, YWINRES, 0,
-      (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
+    SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
     
     init_gl_window(XWINRES, YWINRES)
-    SDL::Mouse.hide()
     SDL::WM.setCaption(TITLE, "")
-  end
-  
-  # all stuff ready
-  def prepare 
-    
+    SDL::Mouse.hide()
   end
   
   def run!
+    @running = true
     while @running do
       until (event = SDL::Event2.poll).nil?
         sdl_event(event)
@@ -509,4 +477,3 @@ class Engine
     @running = false
   end
 end
-

@@ -85,14 +85,9 @@ class TicTacToe
     $welcome.visible = true
     $engine.timer.call_later(3000) do $welcome.visible = false end
   end
-
-  
-   
 end
 
 class Mouse < Entity
-  
-  
   include Rotating
   
   def initialize x, y, size, color_hash
@@ -159,6 +154,7 @@ class MarkGFX < Triangle
   end
 end
 
+# TODO : use lines from glbase...
 def draw_grid
   GL::LineWidth(2.8)
   @c = [1,1,0,1]
@@ -273,9 +269,9 @@ def sdl_event event
 end
 
 class Engine
-  alias_method :prepare_original, :prepare
+#  alias_method :prepare_original, :prepare
   def prepare
-    prepare_original
+  #  prepare_original
     $welcome = nil
     $game = TicTacToe.new
     $foobar = nil
@@ -285,17 +281,17 @@ class Engine
     @m = Mouse.new(100, 100, 100, 
       :colors_in => [
         ColorList.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
-        ColorList.new(3) do Color.random(1, 0, 0) end, # pq
-        ColorList.new(3) do Color.random(0, 0, 1) end  # p2
+        ColorList.new(3) do Color.random(1, 0, 0, 0.7) end, # pq
+        ColorList.new(3) do Color.random(0, 0, 1, 0.7) end  # p2
       ],  
       :colors_out => 
-        ColorList.new(3) do Color.random(0, 0.8, 0) end)
+        ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end)
 
     @m.extend(Rotating)
 
     $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "FPS GO HERE")]
     $bla.first.extend(TopLeftPositioning)
-    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
+    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "TIC TAC TOE")
     $engine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
     $welcome.extend(Pulsing)
@@ -303,9 +299,8 @@ class Engine
   end
 end
 
+# TODO make this configurable // command line switch?
 require 'ruby-prof'
-
-# Profile the code
 RubyProf.start
 
 
