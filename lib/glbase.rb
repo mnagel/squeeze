@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby -rubygems
+#!/usr/bin/env ruby -wKU
+
 
 =begin
     tictactoe - tic tac toe game
@@ -21,17 +22,44 @@
 
 =end
 
-# TODO use ruby 1.9
-# TODO kill all todos...
 # TODO finalizers, private attributes, getters, setters ...
-
 # TODO document!!!
 
 class Color
-  attr_accessor :r, :g, :b, :a
+  def r
+    @data[0]
+  end
+  
+  def g
+    @data[1]
+  end
+  
+  def b
+    @data[2]
+  end
+  
+  def a
+    @data[3]
+  end
+  
+  def r=val
+    @data[0] = val
+  end
+  
+  def g=val
+    @data[1] = val
+  end
+  
+  def b=val
+    @data[2] = val
+  end
+  
+  def a=val
+    @data[3] = val
+  end
   
   def initialize r, g, b, a=1
-    @r, @g, @b, @a = r, g, b, a
+    @data = [r, g, b, a]
   end
   
   def self.random r, g, b, a=1
@@ -44,9 +72,8 @@ class Color
       a)
   end
   
-  def to_a
-    # TODO : dont create array, but have it all the time and reuse it (create as_a method!)
-    return [@r, @g, @b, @a]
+  def as_a
+    return @data
   end
 end
 
@@ -98,13 +125,11 @@ class Texture
     
     return self.new(my_gl_handle, my_w, my_h)
     
-    # TODO SDL Surface direkt freigeben    
-    # TODO im FINALIZER
-    # GL::DeleteTextures($texture)
+    # TODO im FINALIZER # GL::DeleteTextures($texture)
   end
   
-  def self.render_text string, color, font # TODO : is color needed or is it set by opengl afterwards?
-    sdlsurface = font.renderBlendedUTF8(string, color.r, color.g, color.b) # TODO need power of two?
+  def self.render_text string, font 
+    sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255) # white, because color is set in opengl afterwards
     my_gl_handle = GL.GenTextures(1).first;
     
     STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
@@ -122,13 +147,14 @@ class Texture
     return self.new(my_gl_handle, my_w, my_h)
   end
   
+  @@none = self.new(0, 0, 0)
   def self.none
-    return self.new(0, 0, 0) # TODO : cache this!
+    return @@none
   end
 end
 
 class Entity
-  attr_accessor :x, :y, :z, :w, :h, :r, :parent, :subs, :visible # TODO : make "compositum" mixin
+  attr_accessor :x, :y, :z, :w, :h, :r, :parent, :subs, :visible
   
   def initialize x, y, w, h
     @x, @y, @w, @h = x, y, w, h
@@ -201,13 +227,13 @@ class Rect < OpenGL2D
       #end
       
       GL::Begin(GL_QUADS);
-      GL.Color(@colors.as_a[0].to_a);
+      GL.Color(@colors.as_a[0].as_a);
       GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
-      GL.Color(@colors.as_a[1].to_a);
+      GL.Color(@colors.as_a[1].as_a);
       GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
-      GL.Color(@colors.as_a[2].to_a);
+      GL.Color(@colors.as_a[2].as_a);
       GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
-      GL.Color(@colors.as_a[3].to_a);
+      GL.Color(@colors.as_a[3].as_a);
       GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
       GL::End();
       #unless @texture.nil?
@@ -229,13 +255,13 @@ class Triangle < OpenGL2D
     super do
       
       GL.Begin(GL::TRIANGLES)
-      GL.Color(@colors.as_a[0].to_a)
+      GL.Color(@colors.as_a[0].as_a)
       GL.Vertex3f(-1, -TAN30, 0.0)
       
-      GL.Color(@colors.as_a[1].to_a)
+      GL.Color(@colors.as_a[1].as_a)
       GL.Vertex3f(0, 2*TAN30, 0.0)
       
-      GL.Color(@colors.as_a[2].to_a)
+      GL.Color(@colors.as_a[2].as_a)
       GL.Vertex3f(1, -TAN30, 0.0)
       GL.End()       
     end
@@ -247,12 +273,16 @@ MYVAL2 = 3
 
 class Text < Rect
   
-  attr_accessor :text # TODO settext method update texture...
+  private
+  
+  public
+  
+  attr_reader :text
   
   def set_text text
     @texture.kill! unless @texture.nil?
     # re render texture
-    @texture = Texture.render_text(text, @color, @font)
+    @texture = Texture.render_text(text, @font)
     @h, @w = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
     
     @w = @texture.w * @size / (MYVAL * MYVAL2) #size
@@ -262,8 +292,9 @@ class Text < Rect
   def initialize x, y, size, color, font, text
     @color = color
     @size = size
-    @colors = ColorList.new(4) { |i| color } # FIXME shorten the list...
+    @colors = ColorList.new(4) { |i| color }
     @font = SDL::TTF.open(font, MYVAL, index = 0)
+    @texture = nil
     set_text text
     t = @texture
     super x, y, @w, @h
@@ -288,29 +319,29 @@ module Rotating
     # puts "rotating"
   end
 end
-  
+
 module Pulsing
-   
+  
   def reinit # FIXME auto-call in include/extend
     @pulse = 0
     @pulsing = true
     @max_h = @h
     @max_w = @w
   end
-  
+    
   def tick dt
 
     super
     return unless @pulsing
     val = 0.003 * dt
-    
+      
     @pulse += val
     sin = Math.cos(@pulse)
     #puts "sin #{sin}, @max_w #{@max_w}, @max_h #{@max_h}"
     @w = @max_w * 0.5 * (1 + sin * sin)
     @h = @max_h * 0.5 * (1 + sin * sin)
   end
-  
+    
   attr_accessor :pulse, :pulsing
 end
   
@@ -324,6 +355,7 @@ end
 XWINRES = 750
 YWINRES = 750
 FULLSCREEN = 0
+TITLE = "gl base supported application"
 
 require "sdl"
 require "opengl"
@@ -379,7 +411,7 @@ class Timer
   def initialize
     @last_tick = @rate_tick = Time.now
     @tickcount = 0
-    @tickrate = 60
+    @tick_rate = 60
     @running = true
     @total_time = 0.0
     @to_call = []
@@ -452,6 +484,7 @@ class Engine
     
     init_gl_window(XWINRES, YWINRES)
     SDL::Mouse.hide()
+    SDL::WM.setCaption(TITLE, "")
   end
   
   # all stuff ready

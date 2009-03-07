@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Class: MarkGFX</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Class</strong></td>
+          <td class="class-name-in-header">MarkGFX</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../files/lib/glticatactoe_rb.html">
+                lib/glticatactoe.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        <tr class="top-aligned-row">
+            <td><strong>Parent:</strong></td>
+            <td>
+                <a href="Triangle.html">
+                Triangle
+               </a>
+            </td>
+        </tr>
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+    <div id="diagram">
+      <map id="map" name="map">
+  <area shape="rect" coords="121,178,196,226"      href="MarkGFX.html" alt="MarkGFX" />
+  <area shape="rect" coords="220,178,292,226"      href="Float.html" alt="Float" />
+  <area shape="rect" coords="316,178,388,226"      href="Mouse.html" alt="Mouse" />
+  <area shape="rect" coords="585,50,735,122"      href="TicTacToe.html" alt="TicTacToe\n[lib/glticatactoe.rb\nlib/tictactoe.rb]" />
+  <area shape="rect" coords="412,50,561,122"      href="Mark.html" alt="Mark\n[lib/glticatactoe.rb\nlib/tictactoe.rb]" />
+  <area shape="rect" coords="767,50,916,122"      href="Engine.html" alt="Engine\n[lib/glbase.rb\nlib/glticatactoe.rb]" />
+  <area shape="rect" coords="219,62,291,110"      href="Rotating.html" alt="Rotating" />
+  <area shape="rect" coords="123,62,195,110"      href="Triangle.html" alt="Triangle" />
+  <area shape="rect" coords="316,62,388,110"      href="Entity.html" alt="Entity" />
+  <area shape="rect" coords="16,50,109,98"      href="Mine.html" alt="Mine" />
+</map>
+<img src="../dot/f_0.png" usemap="#map" border="0" alt="dot/f_0.png">
+    </div>
+
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000044">new</a>&nbsp;&nbsp;
+      <a href="#M000045">tick</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+    <div id="includes">
+      <h3 class="section-bar">Included Modules</h3>
+
+      <div id="includes-list">
+        <span class="include-name"><a href="Rotating.html">Rotating</a></span>
+      </div>
+    </div>
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Class methods</h3>
+
+      <div id="method-M000044" class="method-detail">
+        <a name="M000044"></a>
+
+        <div class="method-heading">
+          <a href="#M000044" class="method-signature">
+          <span class="method-name">new</span><span class="method-args">(x, y, size, mark, color_hash)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000044-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000044-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/glticatactoe.rb, line 124</span>
+124:   <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span> <span class="ruby-identifier">x</span>, <span class="ruby-identifier">y</span>, <span class="ruby-identifier">size</span>, <span class="ruby-identifier">mark</span>, <span class="ruby-identifier">color_hash</span>
+125:     <span class="ruby-comment cmt"># puts color_hash</span>
+126:     <span class="ruby-keyword kw">super</span> <span class="ruby-identifier">x</span>, <span class="ruby-identifier">y</span>, <span class="ruby-identifier">size</span>, <span class="ruby-identifier">size</span> <span class="ruby-comment cmt"># color_hash[:color_p1]</span>
+127:     <span class="ruby-ivar">@c1</span> = <span class="ruby-identifier">color_hash</span>[<span class="ruby-identifier">:color_p1</span>]
+128:     <span class="ruby-ivar">@c2</span> = <span class="ruby-identifier">color_hash</span>[<span class="ruby-identifier">:color_p2</span>]
+129:     <span class="ruby-ivar">@mark</span> = <span class="ruby-identifier">mark</span>
+130:     <span class="ruby-ivar">@visible</span> = <span class="ruby-keyword kw">false</span>
+131:     
+132:     <span class="ruby-ivar">@rotating</span> = <span class="ruby-keyword kw">true</span>
+133:     
+134:     <span class="ruby-identifier">subs</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">Square</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">0</span>, <span class="ruby-value">0</span>, <span class="ruby-value">0</span><span class="ruby-value">.5</span>)
+135:     <span class="ruby-identifier">subs</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">colors</span> = <span class="ruby-constant">ColorList</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">4</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-constant">Color</span>.<span class="ruby-identifier">random</span>(<span class="ruby-value">255</span>, <span class="ruby-value">255</span>, <span class="ruby-value">255</span>) <span class="ruby-keyword kw">end</span>
+136:     <span class="ruby-identifier">subs</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">s</span>.<span class="ruby-identifier">visible</span> = <span class="ruby-keyword kw">false</span> <span class="ruby-keyword kw">end</span>
+137:   <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000045" class="method-detail">
+        <a name="M000045"></a>
+
+        <div class="method-heading">
+          <a href="#M000045" class="method-signature">
+          <span class="method-name">tick</span><span class="method-args">(dt)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000045-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000045-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/glticatactoe.rb, line 139</span>
+139:   <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">tick</span> <span class="ruby-identifier">dt</span>
+140:     <span class="ruby-keyword kw">super</span>
+141:     
+142:     <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@mark</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-keyword kw">or</span> <span class="ruby-ivar">@mark</span>.<span class="ruby-identifier">player</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>
+143:       <span class="ruby-ivar">@visible</span> = <span class="ruby-keyword kw">false</span>
+144:       <span class="ruby-keyword kw">return</span>
+145:     <span class="ruby-keyword kw">else</span>
+146:       <span class="ruby-ivar">@visible</span> = <span class="ruby-keyword kw">true</span>
+147:       <span class="ruby-identifier">subs</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">s</span>.<span class="ruby-identifier">visible</span> = <span class="ruby-keyword kw">true</span> <span class="ruby-keyword kw">end</span>
+148:     <span class="ruby-keyword kw">end</span>
+149:     
+150:     <span class="ruby-keyword kw">case</span> <span class="ruby-ivar">@mark</span>.<span class="ruby-identifier">player</span>
+151:     <span class="ruby-keyword kw">when</span> <span class="ruby-value">1</span> <span class="ruby-keyword kw">then</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">colors</span> = <span class="ruby-ivar">@c1</span>; <span class="ruby-identifier">subs</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">texture</span> = <span class="ruby-identifier">$p1</span>
+152:     <span class="ruby-keyword kw">else</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">colors</span> = <span class="ruby-ivar">@c2</span>; <span class="ruby-identifier">subs</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">texture</span> = <span class="ruby-identifier">$p2</span>
+153:     <span class="ruby-keyword kw">end</span>
+154:   <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>

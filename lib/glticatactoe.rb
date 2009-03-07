@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby -wKU
 
 =begin
     tictactoe - tic tac toe game
@@ -21,10 +21,17 @@
 
 =end
 
-# TODO make winners rotate
-# TODO add pulsing
+# TODO nicer texts at begining and win, add "draw!" ...
 
-require "sdl"
+def silently(&block)
+  warn_level = $VERBOSE
+  $VERBOSE = nil
+  result = block.call
+  $VERBOSE = warn_level
+  result
+end
+
+silently do require "sdl" end
 require "opengl"
 
 require 'tictactoe'
@@ -91,14 +98,12 @@ class Mouse < Entity
   def initialize x, y, size, color_hash
     super x, y, size, size
     @colors_in = color_hash[:colors_in]
-    #shape = Square # FIXME!!!
     shape = Triangle
     @colors = color_hash[:colors_out]
     @subs << shape.new(0, 0, 1, 1)
     @subs.first.colors =  color_hash[:colors_out]  # ColorList.new(3) do |i| Color.random(0.0, 1.0, 0.0, 0.5) end
 
     @subs.last.subs << Triangle.new(0, 0, 0.5,0.5)
-    # TODO add a sub to  this triangle that contains the picture of the player...
     @bla = Square.new(0, 0, 0.8)
     @bla.texture = $p1 #Texture.new($p1, 800, 800)
     a = 1.0
@@ -208,20 +213,20 @@ def on_key_down key
   $x = (not $x)
   #@m.pulsing = (not @m.pulsing)
   case key
-  when SDL::Key::ESCAPE :
+  when SDL::Key::ESCAPE then
       $engine.kill!
-  when 48 : # Zero
+  when 48 then # Zero
     unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
       puts $game.to_s
     end
-  when 97 : # A
+  when 97 then # A
     on_key_down(SDL::Key::SPACE)
     10.times { on_key_down(48) }
-  when 98 : # B
+  when 98 then # B
     $engine.timer.toggle
-  when SDL::Key::SPACE :
+  when SDL::Key::SPACE then
       $game = TicTacToe.new
     puts $game.to_s
   else
@@ -231,17 +236,17 @@ end
 
 def on_mouse_down button, x, y
   case button
-  when SDL::Mouse::BUTTON_RIGHT :
+  when SDL::Mouse::BUTTON_RIGHT then
       $game = TicTacToe.new
     puts $game.to_s
-  when SDL::Mouse::BUTTON_LEFT :
+  when SDL::Mouse::BUTTON_LEFT then
       fx = (x / (XWINRES/3)).to_i
     fy = (y / (YWINRES/3)).to_i
     unless $game.gameover?
       $game.do_move(fx,fy) 
       puts $game.to_s
     end
-  when SDL::Mouse::BUTTON_MIDDLE :
+  when SDL::Mouse::BUTTON_MIDDLE then
       unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
@@ -267,22 +272,14 @@ def sdl_event event
   end
 end
 
-module Mine
-  def hack
-    super
-    puts "hack"
-  end
-
-end
-
 class Engine
   alias_method :prepare_original, :prepare
   def prepare
     prepare_original
+    $welcome = nil
     $game = TicTacToe.new
-    #    puts $game.to_s
+    $foobar = nil
 
-  
     $p1 = Texture.load_file("gfx/a.png")
     $p2 = Texture.load_file("gfx/b.png")
     @m = Mouse.new(100, 100, 100, 
@@ -296,22 +293,15 @@ class Engine
 
     @m.extend(Rotating)
 
-
     $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "FPS GO HERE")]
-  
     $bla.first.extend(TopLeftPositioning)
- 
     $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "WELCOME")
     $engine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
-  
     $welcome.extend(Pulsing)
     $welcome.reinit
-  
   end
 end
-
-# TODO : do not profile always...
 
 require 'ruby-prof'
 
@@ -332,6 +322,7 @@ result = RubyProf.stop
 
 # Print a flat profile to text
 printer = RubyProf::FlatPrinter.new(result)
-printer.print(STDOUT, 0)
+dest = File.new("profile.txt", "w")
+silently do printer.print(dest, 0); puts "profiling has been written to profile.txt" end
 
 

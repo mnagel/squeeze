@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -rubygems
+#!/usr/bin/env ruby -wKU
 
 =begin
     tictactoe - tic tac toe game
@@ -21,7 +21,7 @@
 
 =end
 
-# TODO check id is replaced above...
+# TODO check if id is replaced above...
 
 # the Matrix class is used to store two dimensional data
 class Matrix
@@ -148,7 +148,6 @@ class TicTacToe
       on_game_won  w.first.player, w
     end
     
-    # TODO add on_win and show  winnner in gl there :)
     @player = @player == 1 ? 2 : 1
     @player = 0 if gameover?
   end
@@ -178,7 +177,7 @@ class TicTacToe
   # * returns nil for no winner
   # * returns 1 if player 1 wins
   # * returns 2 if player 2 wins
-  # CHECK  -- if both players won, 1 is returned
+  # if both players won behaviour is undefined
   def check_winner thefield = @field
     winners = []
     
@@ -205,7 +204,7 @@ class TicTacToe
     (1..2).each { |player|
       checks.each { |c|
         d = c.map { |item| item.player } << player
-        if (d.uniq.length == 1 and 1..2 === d.first)
+        if (d.uniq.length == 1 and (1..2) === d.first)
           c.each { |var| winners << var }
         end
       }
