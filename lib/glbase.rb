@@ -25,14 +25,12 @@
 XWINRES = 750
 YWINRES = 750
 FULLSCREEN = 0
+
 TITLE = "gl base supported application"
+UPDATERATE = 120 # ticks
 
-    UPDATERATE = 120 # ticks
-    
-
-# FIXME rename...
-MYVAL = 40
-MYVAL2 = 3
+FREETYPE_FONTSIZE = 40
+FONTSIZE_ADJUSTMENT_HACK = 3
 
 require "sdl"
 require "opengl"
@@ -146,9 +144,13 @@ class Texture
   end
   
   def self.load_file filename
-    sdlsurface = SDL::Surface.load(filename)  # TODO catch non-rgba-png errors
-    return self.from_sdl_surface(sdlsurface, false)
-    
+    begin
+      sdlsurface = SDL::Surface.load(filename)
+      return self.from_sdl_surface(sdlsurface, false)
+    rescue => exc
+      STDERR.puts("#{filename} coult not be loaded as texture as expected")
+      return self.none
+    end
   end
   
   def self.render_text string, font 
@@ -218,6 +220,11 @@ class OpenGL2D < Entity
   end
 end
 
+# TODO add line class
+#class Line < OpenGL2D
+#  def initialize x, y,
+#end
+
 class Rect < OpenGL2D
   def render
     super do
@@ -280,23 +287,23 @@ class Text < Rect
     @texture = Texture.render_text(text, @font)
     @h, @w = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
     
-    @w = @texture.w * @size / (MYVAL * MYVAL2) #size
-    @h = @texture.h  * @size / (MYVAL * MYVAL2) #size
+    @w = @texture.w * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
+    @h = @texture.h  * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
   end
   
   def initialize x, y, size, color, font, text
     @color = color
     @size = size
     @colors = ColorList.new(4) { |i| color }
-    @font = SDL::TTF.open(font, MYVAL, index = 0)
+    @font = SDL::TTF.open(font, FREETYPE_FONTSIZE, index = 0)
     @texture = nil
     set_text text
     t = @texture
     super x, y, @w, @h
     @texture = t
     
-    @w = @texture.w* @size / (MYVAL * MYVAL2)
-    @h = @texture.h * @size / (MYVAL * MYVAL2)
+    @w = @texture.w* @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
+    @h = @texture.h * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
   end
 end
 

@@ -125,14 +125,18 @@ class TicTacToe
       end
     end
   end
-  
+
   def on_game_start
+    
+  end
+
+  def on_gameover
     
   end
   
   def on_game_won winner, winning_stones
     puts "#{winner} won the game"
-        
+
     winning_stones.each do |item|
       item.is_winner!
     end
@@ -147,7 +151,10 @@ class TicTacToe
     end
     
     @player = @player == 1 ? 2 : 1
-    @player = 0 if gameover?
+    if gameover?
+      @player = 0
+      on_gameover
+    end
   end
 
   # check if a move is valid, i.e. 1-9 on a unoccupied field, or 0 for ai move
@@ -170,12 +177,7 @@ class TicTacToe
     end until is_valid_move(x,y)
     return x,y
   end
-
-  # check if there is a winner
-  # * returns nil for no winner
-  # * returns 1 if player 1 wins
-  # * returns 2 if player 2 wins
-  # if both players won behaviour is undefined
+  
   def check_winner thefield = @field
     winners = []
     
@@ -242,7 +244,7 @@ class TicTacToe
 
     while true
       tryx, tryy = rand(3), rand(3)
-      next unless @field[tryx][tryy].player == 0
+      next unless field2[tryx][tryy].player == 0
 
       field2[tryx][tryy].player = @player
       if check_winner(field2) != nil and check_winner(field2).first.player == @player then return tryx,tryy end

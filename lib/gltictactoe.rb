@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -wKU
+#!/usr/bin/env ruby1.9 -wKU
 
 =begin
     tictactoe - tic tac toe game
@@ -20,8 +20,6 @@
     $Id$
 
 =end
-
-# TODO nicer texts at begining and win, add "draw!" ...
 
 def silently(&block)
   warn_level = $VERBOSE
@@ -60,11 +58,11 @@ class Mark
   end
 end
 
-class TicTacToe
-  alias_method(:gw_old, :on_game_won)
-  
+class TicTacToeGL < TicTacToe
   def on_game_won winner, winning_stones
-    gw_old winner, winning_stones
+
+    puts "game was won by #{winner}, with stones #{winning_stones}"
+    super winner, winning_stones
     winning_stones.each { |item| 
       item.gfx.pulsing = true
     }
@@ -75,11 +73,20 @@ class TicTacToe
     $welcome.visible = false
     $engine.timer.call_later(3000) do $foobar = nil end
   end
-  
-  alias_method(:gs_old, :on_game_start)
+
+  def on_gameover
+    return unless check_winner.nil?
+    #puts "DRAWCODE"
+    $foobar = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), "font.ttf", "DRAW")
+    $foobar.extend(Pulsing)
+    $foobar.reinit
+    $welcome.visible = false
+    $engine.timer.call_later(3000) do $foobar = nil end
+
+  end
       
   def on_game_start
-    gs_old
+    super
     return if $welcome.nil?
     $engine.timer.wipe!
     $welcome.visible = true
@@ -215,7 +222,7 @@ def on_key_down key
     unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
-      puts $game.to_s
+      #puts $game.to_s
     end
   when 97 then # A
     on_key_down(SDL::Key::SPACE)
@@ -223,8 +230,8 @@ def on_key_down key
   when 98 then # B
     $engine.timer.toggle
   when SDL::Key::SPACE then
-      $game = TicTacToe.new
-    puts $game.to_s
+      $game = TicTacToeGL.new
+    #puts $game.to_s
   else
     puts key
   end
@@ -233,20 +240,20 @@ end
 def on_mouse_down button, x, y
   case button
   when SDL::Mouse::BUTTON_RIGHT then
-      $game = TicTacToe.new
-    puts $game.to_s
+      $game = TicTacToeGL.new
+    #puts $game.to_s
   when SDL::Mouse::BUTTON_LEFT then
       fx = (x / (XWINRES/3)).to_i
     fy = (y / (YWINRES/3)).to_i
     unless $game.gameover?
       $game.do_move(fx,fy) 
-      puts $game.to_s
+      #puts $game.to_s
     end
   when SDL::Mouse::BUTTON_MIDDLE then
       unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
-      puts $game.to_s
+      #puts $game.to_s
     end    
   end
 end
@@ -273,7 +280,7 @@ class Engine
   def prepare
   #  prepare_original
     $welcome = nil
-    $game = TicTacToe.new
+    $game = TicTacToeGL.new
     $foobar = nil
 
     $p1 = Texture.load_file("gfx/a.png")
@@ -299,11 +306,6 @@ class Engine
   end
 end
 
-# TODO make this configurable // command line switch?
-require 'ruby-prof'
-RubyProf.start
-
-
 begin
   $engine = Engine.new
   $engine.prepare
@@ -312,12 +314,3 @@ rescue => exc
   STDERR.puts "there was an error: #{exc.message}"
   STDERR.puts exc.backtrace
 end
-
-result = RubyProf.stop
-
-# Print a flat profile to text
-printer = RubyProf::FlatPrinter.new(result)
-dest = File.new("profile.txt", "w")
-silently do printer.print(dest, 0); puts "profiling has been written to profile.txt" end
-
-
