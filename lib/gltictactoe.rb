@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9 -wKU
+#!/usr/bin/env ruby -wKU
 
 =begin
     tictactoe - tic tac toe game
@@ -20,6 +20,15 @@
     $Id$
 
 =end
+
+FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
+INFOTEXT = <<EOT
+    tictactoe - tic tac toe game
+    Copyright (C) 2008, 2009 by Michael Nagel
+
+    icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
+    icons licensed under Creative Commons BY-NC-SA
+EOT
 
 def silently(&block)
   warn_level = $VERBOSE
@@ -67,7 +76,7 @@ class TicTacToeGL < TicTacToe
       item.gfx.pulsing = true
     }
     
-    $foobar = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(0, 255, 0, 0.8), "font.ttf", "PLAYER #{winner} WINS!")
+    $foobar = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(0, 255, 0, 0.8), FONTFILE, "PLAYER #{winner} WINS!")
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
@@ -77,7 +86,7 @@ class TicTacToeGL < TicTacToe
   def on_gameover
     return unless check_winner.nil?
     #puts "DRAWCODE"
-    $foobar = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), "font.ttf", "DRAW")
+    $foobar = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "DRAW")
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
@@ -296,9 +305,9 @@ class Engine
 
     @m.extend(Rotating)
 
-    $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), "font.ttf", "FPS GO HERE")]
+    $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")]
     $bla.first.extend(TopLeftPositioning)
-    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), "font.ttf", "TIC TAC TOE")
+    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), FONTFILE, "TIC TAC TOE")
     $engine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
     $welcome.extend(Pulsing)
@@ -307,6 +316,7 @@ class Engine
 end
 
 begin
+  puts INFOTEXT
   $engine = Engine.new
   $engine.prepare
   $engine.run!

@@ -29,7 +29,7 @@ FULLSCREEN = 0
 TITLE = "gl base supported application"
 UPDATERATE = 120 # ticks
 
-FREETYPE_FONTSIZE = 40
+FREETYPE_FONTSIZE = 60
 FONTSIZE_ADJUSTMENT_HACK = 3
 
 require "sdl"
@@ -295,7 +295,14 @@ class Text < Rect
     @color = color
     @size = size
     @colors = ColorList.new(4) { |i| color }
-    @font = SDL::TTF.open(font, FREETYPE_FONTSIZE, index = 0)
+    @font = nil
+    begin
+
+      @font = SDL::TTF.open(font, FREETYPE_FONTSIZE, index = 0)
+      throw "font did not load" if @font.nil?
+    rescue => exc
+      throw "error opening font: #{font}"
+    end
     @texture = nil
     set_text text
     t = @texture
