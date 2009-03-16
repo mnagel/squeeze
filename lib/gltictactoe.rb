@@ -21,6 +21,10 @@
 
 =end
 
+# TODO set window title correctly
+
+$LOAD_PATH << './lib'
+
 FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
 INFOTEXT = <<EOT
     tictactoe - tic tac toe game
@@ -40,7 +44,6 @@ end
 
 silently do require "sdl" end
 require "opengl"
-
 require 'tictactoe'
 require 'glbase'
 
