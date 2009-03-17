@@ -143,7 +143,9 @@ obj2 = $bla[j]
           # TODO do correct bouncing here
           #$engine.timer.pause
           obj.invert
+          obj.weaken
           obj2.invert
+          obj2.weaken
 
           $crashes += 1
         end
