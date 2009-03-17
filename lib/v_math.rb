@@ -30,6 +30,10 @@ class V2
     @x, @y = x, y
   end
 
+  def clone
+    return V2.new(@x, @y)
+  end
+
   def ==(v)
     @x == v.x and @y == v.y
   end
@@ -76,41 +80,4 @@ class V2
   def to_s
     "(#{@x}, #{@y})"
   end
-end
-
-def collide p1, p2, v1, v2, m1, m2
-  10.times do puts end
-  puts "doing collision: p1 #{p1}, p2 #{p2}, v1 #{v1}, v2 #{v2}, m1 #{m1}, m2 #{m2}"
-  # normal and tangential directions
-  normal     = p2 - p1
-  puts "normal #{normal}"
-  tangential = normal.normal
-  puts "tangential #{tangential}"
-
-  # split movement in normal/tangential component
-  v1n = normal.unit.dot(v1)
-  puts "v1n #{v1n}"
-  v1t = tangential.unit.dot(v1)
-  puts "v1n #{v1t}"
-
-  v2n = normal.unit.dot(v2)
-  puts "v1n #{v2n}"
-  v2t = tangential.unit.dot(v2)
-  puts "v1n #{v2t}"
-
-  # calculate new normal components (primed ('))
-  v1np = (v1n * (m1-m2) + 2 * m2 * v2n) / (m1 + m2)
-  puts "v1np #{v1np}"
-  v2np = (v2n * (m2-m1) + 2 * m1 * v1n) / (m1 + m2)
-  puts "v2np #{v2np}"
-
-
-  # add new normal * normal_direction to old tangential to get result
-  res1 = (tangential.unit * v1t) + (normal.unit * v1np)
-  res2 = (tangential.unit * v2t) + (normal.unit * v2np)
-
-  puts "res1 #{res1}"
-  puts "res1 #{res1}"
-
-  return res1, res2
 end

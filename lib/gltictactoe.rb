@@ -203,29 +203,42 @@ def draw_grid
   GL.End()   
 end
 
-def draw_gl_scene dt
+def update_world dt
+  $game.field.each { |x,y,o|
+    o.gfx.tick dt
+  }
+
+  @m.tick dt
+
+  #TODO kill
+  unless $foobar.nil?
+    $foobar.tick dt
+  end
+
+  $bla.each do |x| x.tick dt;  end
+  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
+end
+
+def draw_gl_scene
+  GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
   define_screen 600, 600
   draw_grid
   
   $game.field.each { |x,y,o| 
     o.gfx.render
-    o.gfx.tick dt
   }
   
   define_screen
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
-  @m.tick dt
   @m.render
 
   #TODO kill
   unless $foobar.nil?
-    $foobar.tick dt
     $foobar.render
   end
 
-  $bla.each do |x| x.tick dt; x.render end
-  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps" #  #{a = ''; rand(3).times { a+= "xxx"}; a}"
+  $bla.each do |x| x.render end
 end
 
 def on_key_down key

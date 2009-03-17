@@ -32,11 +32,14 @@ UPDATERATE = 120 # ticks
 FREETYPE_FONTSIZE = 60
 FONTSIZE_ADJUSTMENT_HACK = 3
 
+$SHOW_BOUNDING_BOXES = false
+
 require 'v_math'
 V = V2
 
 require "sdl"
 require "opengl"
+require "logger"
 
 # TODO finalizers, private attributes, getters, setters ...
 # TODO document!!!
@@ -194,20 +197,53 @@ class Entity
         @colors = ColorList.new(4) { |i| Color.new(1.0, 0, 1.0, 0.8) }
       end
       translate; scale; rotate;
+
+      draw_bounding_box if $SHOW_BOUNDING_BOXES
+
       yield if block_given?      
       @subs.each do |sub| sub.render end
     end if @visible
   end
-  
-  def translate
-    GL.Translate(@pos.x, @pos.y, @z)
+
+  def draw_bounding_box
+    GL::LineWidth(1)
+    @c = [1,0,0,1]
+    GL.Color(@c)
+    GL.Begin(GL::LINE_LOOP)
+
+    GL.Vertex3f( -1, -1, 0.0)
+    GL.Vertex3f( -1, +1, 0.0)
+    GL.Vertex3f( +1, +1, 0.0)
+    GL.Vertex3f( +1, -1, 0.0)
+
+    GL.Vertex3f( -1, -1, 0.0)
+
+    GL.End()
+
+
+    @c = [0,1,0,1]
+    GL.Color(@c)
+    GL.Begin(GL::LINE_LOOP);
+    angle = 0
+    while angle <= 2 * Math::PI
+
+      GL.Vertex3f(Math.cos(angle), Math.sin(angle), 0);
+
+      angle += Math::PI / 30
+    end
+
+    GL.End()
   end
-  
-  def scale
-    GL.Scale(@size.x, @size.y, 1)
-  end
-  
-  def rotate
+
+    def translate
+      GL.Translate(@pos.x, @pos.y, @z)
+    end
+
+    def scale
+      GL.Scale(@size.x, @size.y, 1)
+    end
+
+    def rotate
     GL.Rotate(@r,0,0,1)
   end
   
@@ -495,8 +531,10 @@ class Engine
         sdl_event(event)
       end
       
-      GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
-      draw_gl_scene @timer.tick
+      delta = @timer.tick
+
+      update_world delta
+      draw_gl_scene
       
       SDL.GLSwapBuffers
     end
