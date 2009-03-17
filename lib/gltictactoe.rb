@@ -21,8 +21,7 @@
 
 =end
 
-# TODO set window title correctly
-
+# TODO clean constants
 $LOAD_PATH << './lib'
 
 FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
@@ -33,6 +32,7 @@ INFOTEXT = <<EOT
     icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
     icons licensed under Creative Commons BY-NC-SA
 EOT
+WINDOWTITLE = "gltictactoe.rb by Michael Nagel"
 
 def silently(&block)
   warn_level = $VERBOSE
@@ -46,8 +46,6 @@ silently do require "sdl" end
 require "opengl"
 require 'tictactoe'
 require 'glbase'
-
-TAN30 = 0.577;
 
 class Float
   def self.rand min, max
@@ -111,28 +109,34 @@ class Mouse < Entity
   
   def initialize x, y, size, color_hash
     super x, y, size, size
-    @colors_in = color_hash[:colors_in]
-    shape = Triangle
     @colors = color_hash[:colors_out]
-    @subs << shape.new(0, 0, 1, 1)
-    @subs.first.colors =  color_hash[:colors_out]  # ColorList.new(3) do |i| Color.random(0.0, 1.0, 0.0, 0.5) end
+    @colors_in = color_hash[:colors_in]
+    
+    @textures = [Texture.none, $p1, $p2]
 
-    @subs.last.subs << Triangle.new(0, 0, 0.5,0.5)
-    @bla = Square.new(0, 0, 0.8)
-    @bla.texture = $p1 #Texture.new($p1, 800, 800)
+    @green = Triangle.new(0, 0, 1, 1)
+    @green.colors = @colors
+
+    @sign = Triangle.new(0, 0, 0.5,0.5)
+    @sign.colors = @colors_in[$game.player]
+
+    @pict = Square.new(0, 0, 0.8)
     a = 1.0
-    @bla.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end 
-    @subs.last.subs.last.subs << @bla
+    @pict.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end
+
+    @subs << @green
+    @green.subs << @sign
+    @sign.subs  << @pict
     
     @rotating = true
+    tick 0
   end
   
   def tick dt
     super dt
-    @subs.last.subs.last.colors = @colors_in[$game.player]
-    foo = [Texture.none, $p1, $p2]
-    @bla.texture = foo[$game.player]
-    @bla.visible = $game.player != 0
+    @sign.colors  = @colors_in[$game.player]
+    @pict.texture = @textures[$game.player]
+    @pict.visible = (not $game.gameover?)
   end
   
 end
@@ -213,7 +217,8 @@ def draw_gl_scene dt
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.tick dt
   @m.render
-  
+
+  #TODO kill
   unless $foobar.nil?
     $foobar.tick dt
     $foobar.render
@@ -223,13 +228,11 @@ def draw_gl_scene dt
   $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps" #  #{a = ''; rand(3).times { a+= "xxx"}; a}"
 end
 
-$x = false
 def on_key_down key
-  $x = (not $x)
   #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE then
-      $engine.kill!
+    $engine.kill!
   when 48 then # Zero
     unless $game.gameover?
       a, b = $game.ki_get_move; 
@@ -242,27 +245,29 @@ def on_key_down key
   when 98 then # B
     $engine.timer.toggle
   when SDL::Key::SPACE then
-      $game = TicTacToeGL.new
+    $game = TicTacToeGL.new
     #puts $game.to_s
   else
     puts key
   end
 end
 
+
+# TODO add coord to field
 def on_mouse_down button, x, y
   case button
   when SDL::Mouse::BUTTON_RIGHT then
-      $game = TicTacToeGL.new
+    $game = TicTacToeGL.new
     #puts $game.to_s
   when SDL::Mouse::BUTTON_LEFT then
-      fx = (x / (XWINRES/3)).to_i
+    fx = (x / (XWINRES/3)).to_i
     fy = (y / (YWINRES/3)).to_i
     unless $game.gameover?
       $game.do_move(fx,fy) 
       #puts $game.to_s
     end
   when SDL::Mouse::BUTTON_MIDDLE then
-      unless $game.gameover?
+    unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
       #puts $game.to_s
@@ -272,7 +277,7 @@ end
 
 def on_mouse_move x, y
   @m.x = x
-  @m.y = y # YWINRES-y
+  @m.y = y
 end
 
 def sdl_event event
@@ -288,9 +293,7 @@ def sdl_event event
 end
 
 class Engine
-#  alias_method :prepare_original, :prepare
   def prepare
-  #  prepare_original
     $welcome = nil
     $game = TicTacToeGL.new
     $foobar = nil
@@ -306,8 +309,10 @@ class Engine
       :colors_out => 
         ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end)
 
-    @m.extend(Rotating)
+    #@m.extend(Rotating)
 
+    # TODO kill bla
+    # TODO include fps in the base code...
     $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")]
     $bla.first.extend(TopLeftPositioning)
     $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), FONTFILE, "TIC TAC TOE")
@@ -315,6 +320,7 @@ class Engine
     $bla << $welcome
     $welcome.extend(Pulsing)
     $welcome.reinit
+    $engine.window_title = WINDOWTITLE
   end
 end
 

@@ -261,18 +261,21 @@ class Square < Rect
 end
 
 class Triangle < OpenGL2D
+
+@@TAN30 = 0.577;
+
   def render
     super do
       
       GL.Begin(GL::TRIANGLES)
       GL.Color(@colors.as_a[0].as_a)
-      GL.Vertex3f(-1, -TAN30, 0.0)
+      GL.Vertex3f(-1, -@@TAN30, 0.0)
       
       GL.Color(@colors.as_a[1].as_a)
-      GL.Vertex3f(0, 2*TAN30, 0.0)
+      GL.Vertex3f(0, 2*@@TAN30, 0.0)
       
       GL.Color(@colors.as_a[2].as_a)
-      GL.Vertex3f(1, -TAN30, 0.0)
+      GL.Vertex3f(1, -@@TAN30, 0.0)
       GL.End()       
     end
   end
@@ -322,8 +325,79 @@ module Rotating
   end
 end
 
+# TODO move from graphics to backend model!
+module Velocity
+  def reinit2
+    @vx = 0.0
+    @vy = 0.0
+
+  end
+
+  def invert
+    @vx = -@vx
+    @vy = -@vy
+  end
+
+    attr_accessor :vx, :vy
+    
+  def tick dt
+    super
+    @x += @vx * dt
+    @y += @vy * dt
+  end
+end
+
+module Gravity
+  def tick dt
+    super
+    @vy += dt * 0.01 # axis is downwards # TODO check if this is indepent of screen size
+  end
+end
+
+module Bounded
+
+  @@bounce = 0.8
+
+  def weaken
+    @vx *= @@bounce
+    @vy *= @@bounce
+  end
+
+  def tick dt
+    super
+
+
+    # TODO objects "hovering" the bottom freak out sometimes
+    if @x < 0
+      @x = -@x
+      @vx = -@vx
+      weaken
+    end
+
+        if @y < 0
+      @y = -@y
+      @vy = -@vy
+      weaken
+    end
+
+    if @x > XWINRES - @w
+      @x = (XWINRES - @w) - (@x - (XWINRES - @w))
+      @vx = -@vx
+      weaken
+    end
+
+        if @y > YWINRES - @h
+      @y = (YWINRES - @h) - (@y - (YWINRES - @h))
+      @vy = -@vy
+      weaken
+    end
+
+  end
+end
+
 module Pulsing
   # FIXME auto-call in include/extend
+  # TODO write testcase for this, and find out why it does not work
   def reinit
     @pulse = 0
     @pulsing = true
@@ -392,7 +466,7 @@ def define_screen virtual_x = XWINRES, virtual_y = YWINRES
   GL::MatrixMode(GL::PROJECTION);
   GL::LoadIdentity();
   GL::Viewport(0,0,XWINRES,YWINRES);
-  GL::Ortho(0,virtual_x,virtual_y,0,0,128);
+  GL::Ortho(0,virtual_x,virtual_y,0,0,128); # TODO make this 1 : ration per default, not x : y
   GL::MatrixMode(GL::MODELVIEW);
 end
 
@@ -471,6 +545,10 @@ class Engine
     init_gl_window(XWINRES, YWINRES)
     SDL::WM.setCaption(TITLE, "")
     SDL::Mouse.hide()
+  end
+
+  def window_title=(title)
+    SDL::WM.setCaption(title, "")
   end
   
   def run!
