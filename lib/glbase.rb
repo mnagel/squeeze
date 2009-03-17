@@ -32,6 +32,9 @@ UPDATERATE = 120 # ticks
 FREETYPE_FONTSIZE = 60
 FONTSIZE_ADJUSTMENT_HACK = 3
 
+require 'v_math'
+V = V2
+
 require "sdl"
 require "opengl"
 
@@ -111,7 +114,7 @@ class ColorList
 end
 
 class Texture
-  attr_accessor :gl_handle, :w, :h
+  attr_accessor :gl_handle, :size #:w, :h
   
   def kill!
     GL.DeleteTextures @gl_handle
@@ -121,7 +124,8 @@ class Texture
   
     # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die texture nur hier verwendet wird!
   def initialize handle, w, h
-    @gl_handle, @w, @h = handle, w, h
+    @size = V.new
+    @gl_handle, @size.x, @size.y = handle, w, h
   end
   
   def self.from_sdl_surface surf, swapcolors = false
@@ -165,12 +169,14 @@ class Texture
 end
 
 class Entity
-  attr_accessor :x, :y, :z, :w, :h, :r, :parent, :subs, :visible
+  attr_accessor :pos, :size, :r, :parent, :subs, :visible, :z # :x, :y, :z, :w, :h,
   
   def initialize x, y, w, h
-    @x, @y, @w, @h = x, y, w, h
+    # @pos.x, @pos.y, @size.x, @size.y = x, y, w, h
     @z = 0
     @r = 0
+    @pos  = V.new(x, y)
+    @size = V.new(w, h)
     
     @visible = true
     @parent = nil
@@ -194,11 +200,11 @@ class Entity
   end
   
   def translate
-    GL.Translate(@x, @y, @z)
+    GL.Translate(@pos.x, @pos.y, @z)
   end
   
   def scale
-    GL.Scale(@w, @h, 1)
+    GL.Scale(@size.x, @size.y, 1)
   end
   
   def rotate
@@ -288,15 +294,16 @@ class Text < Rect
     @texture.kill! unless @texture.nil?
     # re render texture
     @texture = Texture.render_text(text, @font)
-    @h, @w = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
+    @size = V.new
+    @size.y, @size.x = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
     
-    @w = @texture.w * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
-    @h = @texture.h  * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
+    @size.x = @texture.size.x * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
+    @size.y = @texture.size.y  * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
   end
   
-  def initialize x, y, size, color, font, text
+  def initialize x, y, fontsize, color, font, text
     @color = color
-    @size = size
+    @fontsize = fontsize
     @colors = ColorList.new(4) { |i| color }
     @font = nil
     begin
@@ -309,11 +316,11 @@ class Text < Rect
     @texture = nil
     set_text text
     t = @texture
-    super x, y, @w, @h
+    super x, y, @size.x, @size.y
     @texture = t
     
-    @w = @texture.w* @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
-    @h = @texture.h * @size / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
+    @size.x = @texture.size.x* @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
+    @size.y = @texture.size.y * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
   end
 end
 
@@ -325,84 +332,14 @@ module Rotating
   end
 end
 
-# TODO move from graphics to backend model!
-module Velocity
-  def reinit2
-    @vx = 0.0
-    @vy = 0.0
-
-  end
-
-  def invert
-    @vx = -@vx
-    @vy = -@vy
-  end
-
-    attr_accessor :vx, :vy
-    
-  def tick dt
-    super
-    @x += @vx * dt
-    @y += @vy * dt
-  end
-end
-
-module Gravity
-  def tick dt
-    super
-    @vy += dt * 0.01 # axis is downwards # TODO check if this is indepent of screen size
-  end
-end
-
-module Bounded
-
-  @@bounce = 0.8
-
-  def weaken
-    @vx *= @@bounce
-    @vy *= @@bounce
-  end
-
-  def tick dt
-    super
-
-
-    # TODO objects "hovering" the bottom freak out sometimes
-    if @x < 0
-      @x = -@x
-      @vx = -@vx
-      weaken
-    end
-
-        if @y < 0
-      @y = -@y
-      @vy = -@vy
-      weaken
-    end
-
-    if @x > XWINRES - @w
-      @x = (XWINRES - @w) - (@x - (XWINRES - @w))
-      @vx = -@vx
-      weaken
-    end
-
-        if @y > YWINRES - @h
-      @y = (YWINRES - @h) - (@y - (YWINRES - @h))
-      @vy = -@vy
-      weaken
-    end
-
-  end
-end
-
 module Pulsing
   # FIXME auto-call in include/extend
   # TODO write testcase for this, and find out why it does not work
   def reinit
     @pulse = 0
     @pulsing = true
-    @max_h = @h
-    @max_w = @w
+    @max_h = @size.y
+    @max_w = @size.x
   end
     
   def tick dt
@@ -410,8 +347,8 @@ module Pulsing
  
     @pulse += 0.003 * dt
     sin = Math.cos(@pulse)
-    @w = @max_w * 0.5 * (1 + sin * sin)
-    @h = @max_h * 0.5 * (1 + sin * sin)
+    @size.x = @max_w * 0.5 * (1 + sin * sin)
+    @size.y = @max_h * 0.5 * (1 + sin * sin)
   end
     
   attr_accessor :pulse, :pulsing
@@ -420,7 +357,7 @@ end
 module TopLeftPositioning
   def translate
     super
-    GL.Translate(@w, @h, 0)
+    GL.Translate(@size.x, @size.y, 0)
   end
 end
 
@@ -494,7 +431,7 @@ class Timer
       @tick_rate = (UPDATERATE / delta2).to_i
     end
     
-    @hooks.delete_if { |item| 
+    @hooks.delete_if { |item|
       if item.first < @total_time
         item.last.call
         true

@@ -276,8 +276,8 @@ def on_mouse_down button, x, y
 end
 
 def on_mouse_move x, y
-  @m.x = x
-  @m.y = y
+  @m.pos.x = x
+  @m.pos.y = y
 end
 
 def sdl_event event

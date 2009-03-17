@@ -46,6 +46,75 @@ silently do require "sdl" end
 require "opengl"
 require 'glbase'
 
+require 'v_math'
+
+# TODO move from graphics to backend model!
+module Velocity
+  def reinit2
+    @v = V2.new
+  end
+
+  def invert
+    @v *= -1
+  end
+
+    attr_accessor :v
+
+  def tick dt
+    super
+    @pos.x += @v.x * dt
+    @pos.y += @v.y * dt
+  end
+end
+
+module Gravity
+  def tick dt
+    super
+    @v.y += dt * 0.01 # axis is downwards # TODO check if this is indepent of screen size
+  end
+end
+
+module Bounded
+
+  @@bounce = 0.8
+
+  def weaken
+    @v.x *= @@bounce
+    @v.y *= @@bounce
+  end
+
+  def tick dt
+    super
+
+
+    # TODO objects "hovering" the bottom freak out sometimes
+    if @pos.x < 0
+      @pos.x = -@pos.x
+      @v.x = -@v.x
+      weaken
+    end
+
+        if @pos.y < 0
+      @pos.y = -@pos.y
+      @v.y = -@v.y
+      weaken
+    end
+
+    if @pos.x > XWINRES - @size.x
+      @pos.x = (XWINRES - @size.x) - (@pos.x - (XWINRES - @size.x))
+      @v.x = -@v.x
+      weaken
+    end
+
+        if @pos.y > YWINRES - @size.y
+      @pos.y = (YWINRES - @size.y) - (@pos.y - (YWINRES - @size.y))
+      @v.y = -@v.y
+      weaken
+    end
+
+  end
+end
+
 class Float
   def self.rand min, max
     return min + Kernel.rand(0) * (max - min)
@@ -85,11 +154,11 @@ class Mouse < Entity
   def grow dsize
     dsize *= 0.01
     dsize += 1
-    return if @h < 30 and dsize < 0
-    return if @h > 1000 and dsize > 0
+    return if @size.y < 30 and dsize < 0
+    return if @size.y > 1000 and dsize > 0
     dsize = -1 / dsize if dsize < 0
-    @h *= dsize
-    @w *= dsize
+    @size.y *= dsize
+    @size.x *= dsize
   end
 
   def tick dt
@@ -98,6 +167,18 @@ class Mouse < Entity
     grow(+dt * x) if @growing
     grow(-dt * x) if @shrinking
   end
+end
+
+def collide? obj, obj2
+          dx = obj.pos.x - obj2.pos.x
+        dy = obj.pos.y - obj2.pos.y
+        #puts "dx #{dx} -- dy #{dy}"
+        dx *= dx
+        dy *= dy
+        dsq = dx + dy
+        # for squares/circs
+        sizes =  obj.size.x * obj.size.x + obj2.size.x * obj2.size.x #0.5 * (obj.w * obj2.w)
+        return dsq < sizes
 end
 
 $score = 0
@@ -128,29 +209,30 @@ obj2 = $bla[j]
       #puts "(#{i})(#{j}) checking #{obj}  and #{obj2} "
       kkk += 1
 
-        dx = obj.x - obj2.x
-        dy = obj.y - obj2.y
-        #puts "dx #{dx} -- dy #{dy}"
-        dx *= dx
-        dy *= dy
-        dsq = dx + dy
-        # for squares/circs
-        sizes =  obj.w * obj.w + obj2.w * obj2.w #0.5 * (obj.w * obj2.w)
-        if dsq < sizes # TODO dont move them inside each other in the first place
-          puts "#{$crashes} (#{i})(#{j}) checking #{obj}  and #{obj2} crash!!!"
-          puts "sizes #{sizes} --- dsq #{dsq}"
+
+        if collide? obj, obj2 # TODO dont move them inside each other in the first place
+#          puts "#{$crashes} (#{i})(#{j}) checking #{obj}  and #{obj2} crash!!!"
+#          puts "sizes #{sizes} --- dsq #{dsq}"
 
           # TODO do correct bouncing here
           #$engine.timer.pause
-          obj.invert
-          obj.weaken
-          obj2.invert
-          obj2.weaken
+          #obj.invert
+          #obj.weaken
+          #obj2.invert
+          #obj2.weaken
+          # FIXME this backtracking is an !!!EVIL!!! hack, dont move them in the first place!
+          obj.pos -= obj.v * dt * 1.5
+          obj2.pos -= obj2.v * dt * 1.5
+
+          r1, r2 = collide(obj.pos, obj2.pos, obj.v, obj2.v, 1, 1)
+
+          obj.v = r1
+          obj2.v = r2
 
           $crashes += 1
         end
 
-  
+
 
       }
 
@@ -176,6 +258,7 @@ def on_key_down key
     $engine.kill!
   when 48 then # Zero
   when 97 then # A
+    on_mouse_down(SDL::Mouse::BUTTON_MIDDLE, @m.pos.x, @m.pos.y)
   when 98 then # B
     $engine.timer.toggle
   when SDL::Key::SPACE then
@@ -189,7 +272,7 @@ end
 class Circle < Square
   def initialize(x, y, size)
     super x, y, size
-    @texture = $p1
+    @texture = $tex[rand($tex.length)] #$p1
     @colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
   end
 end
@@ -201,15 +284,15 @@ def on_mouse_down button, x, y
   when SDL::Mouse::BUTTON_LEFT then
     @m.growing = true
   when SDL::Mouse::BUTTON_MIDDLE then
-    foo = Circle.new(x, y, @m.w)
+    foo = Circle.new(x, y, @m.size.x)
     foo.extend(Velocity)
     foo.reinit2
     foo.extend(Gravity)
     foo.extend(Bounded)
-    foo.vx = Float.rand(-1,1)
+    foo.v.x = Float.rand(-1,1)
 
     $bla << foo
-    $score += (2 * foo.w *  2* foo.w * 3.14 / 4) / (XWINRES * YWINRES)
+    $score += (2 * foo.size.x *  2* foo.size.x * 3.14 / 4) / (XWINRES * YWINRES)
   end
 end
 
@@ -224,8 +307,8 @@ def on_mouse_up button, x, y
 end
 
 def on_mouse_move x, y
-  @m.x = x
-  @m.y = y
+  @m.pos.x = x
+  @m.pos.y = y
 end
 
 def sdl_event event
@@ -244,6 +327,16 @@ end
 
 class Engine
   def prepare
+    $tex = []
+
+    Dir.entries("gfx/filler").reject { |e| not e =~ /.*\.png/}.each { |fn|
+
+    thef = "gfx/filler/#{fn}"
+    #puts thef
+    $tex << Texture.load_file(thef)
+
+    }
+
     $p1 = Texture.load_file("gfx/a.png")
     $p2 = Texture.load_file("gfx/b.png")
     @m = Mouse.new(100, 100, 100, $p2)
