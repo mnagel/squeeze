@@ -27,5 +27,6 @@ end
 
 profiled do
   puts Dir.pwd
-  require 'lib/gltictactoe'
+  #require 'lib/gltictactoe'
+  require 'lib/glfiller'
 end

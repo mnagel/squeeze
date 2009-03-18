@@ -22,6 +22,8 @@
 
 =end
 
+# TODO offer debug mode that annotates objects with status information (like the bounding boxes)
+
 XWINRES = 750
 YWINRES = 750
 FULLSCREEN = 0

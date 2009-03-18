@@ -21,6 +21,9 @@
 
 =end
 
+# TODO create module, and move out only the "log" method
+
+DEFAULT_FILE = "run.log"
 # how timestamps should be formatted
 DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 # how levels are indented in text-based loggers
@@ -31,6 +34,10 @@ LEVELPREFIX = " . "
 LOGGERS = []
 # current indentation levl
 @@indentation_level = 0
+
+def create_default_loggers
+  LOGGERS.push($clogger = ConsoleLogger.new, $flogger = FileLogger.new(DEFAULT_FILE))
+end
 
 # base class of all loggers
 class LoggerClass
@@ -181,10 +188,6 @@ class GTKTreeLogger < LoggerClass
   end  
 end
 
-
-# TODO cleanup
-LOGGERS.push($clogger = ConsoleLogger.new, $flogger = FileLogger.new('run.log')) # TODO make filename (path!) configurable
-
 # global function writing log messages to all loggers
 # string: message to write out
 # importance: (optional) importance of message
@@ -214,3 +217,6 @@ def logend
     logger.change_indent(false)
   }
 end
+
+# create default loggers
+create_default_loggers

@@ -21,11 +21,18 @@
 
 =end
 
-# TODO proper mouse picture
+# TODO offer tutorial
+# TODO on spwan: show points this move gave
+# FIXME instant gameover if level up on left side
+# TODO not game-over and level up at same time
+# TODO on crash: pause game for some time and mark where crash happened
+# TODO profile and speed up code
+# TODO have multiple lives
+# TODO show "you scored... " on gameover
+# FIXME infinite growth in corners possible
+# TODO make perfectly round graphics and use them...
 
-# TODO add monsters, make them harm
-
-# TODO clean constants
+# TODO clean these strings
 $LOAD_PATH << './lib'
 
 FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
@@ -37,18 +44,6 @@ INFOTEXT = <<EOT
     icons licensed under Creative Commons BY-NC-SA
 EOT
 WINDOWTITLE = "glfiller.rb by Michael Nagel"
-
-
-# TODO show "level up"
-# TODO have multiple lives
-# TODO show "you scored... " on gameover
-# FIXME infinite growth in corners possible
-# TODO make perfectly round graphics and use them...
-# TODO for mouse use image of thing going to spawn...
-
-
-# TODO give me a name
-$bla = nil
 
 def silently(&block)
   warn_level = $VERBOSE
@@ -73,9 +68,9 @@ end
 class Mouse < Entity
   include Rotating
 
-  attr_accessor :v
+  attr_accessor :v, :gonna_spawn
   
-  def initialize x, y, size, texture
+  def initialize x, y, size #, texture
     super x, y, size, size
     @v = V2.new(0, 0)
     @colors = ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end
@@ -86,14 +81,45 @@ class Mouse < Entity
 
     a = 1.0
     @pict.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end
-    @pict.texture = texture
 
     @subs << @green
     @green.subs  << @pict
     
     @rotating = true
     @shrinking = @growing = false
+    @gonna_spawn = $tex[rand($tex.length)]
   end
+
+
+def spawn_ball
+    # TODO let things have a mass...
+    s =  @size.x
+    ball = Circle.new(@pos.x, @pos.y, s)
+    ball.extend(Velocity)
+    ball.reinit2
+    ball.extend(Gravity)
+    ball.extend(Bounded)
+    ball.extend(DoNotIntersect)
+    ball.v.x = Float.rand(-1,1)
+    ball.v.y = Float.rand(-1,1)
+    # TODO dont allow creation in something else...
+
+    $engine.objects << ball
+    $score += (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (XWINRES * YWINRES)
+    $scoreges += (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (XWINRES * YWINRES)
+    $thing_not_to_intersect << ball
+
+    reset2(false) if $score > 0.5
+
+    @growing = false
+    @size = V2.new($mousedef, $mousedef)
+
+    unless get_collider(ball).nil?
+      reset2
+    end
+
+    $m.gonna_spawn = $tex[rand($tex.length)]
+end
 
   def shrinking=bool
     @shrinking = bool
@@ -118,10 +144,11 @@ class Mouse < Entity
     x = 0.1
     grow(+dt * x) if @growing
     grow(-dt * x) if @shrinking
+    @pict.texture = @gonna_spawn
   end
 end
 
-def collide? obj, obj2
+def collide? obj, obj2 # TODO speedup (parent method) by sorting them
   dx = obj.pos.x - obj2.pos.x
   dy = obj.pos.y - obj2.pos.y
   #puts "dx #{dx} -- dy #{dy}"
@@ -129,12 +156,11 @@ def collide? obj, obj2
   dy *= dy
   dsq = dx + dy
   # for squares/circs
-  guess = 1 # 0.85 # there is some border around the images # TODO make this more correct
-  sizes = ((obj.size.x + obj2.size.x) * guess) ** 2  #obj.size.x * obj.size.x + obj2.size.x * obj2.size.x #0.5 * (obj.w * obj2.w)
+  sizes = (obj.size.x + obj2.size.x) ** 2
   return dsq < sizes
 end
 
-def get_collider who
+def get_collider who # TODO speedup
   res = nil
   $thing_not_to_intersect.each { |thing|
     if thing != who
@@ -145,13 +171,18 @@ def get_collider who
 end
 
 def update_world dt
+  @messages.each { |message| message.tick dt }
   @m.tick dt
 
-  $bla.each do |x|
+  $engine.objects.each do |x|
     x.tick dt
   end
+
+  $engine.fpstext.tick dt
   
-  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps \n score: #{($score * 100).to_i}, ges: #{($scoreges * 100).to_i}" # TODO move fps into main engine
+  $engine.fpstext.set_text "rendering @#{$engine.timer.ticks_per_second}fps \n score: #{($score * 100).to_i}," +
+    " ges: #{($scoreges * 100).to_i}"
+  ## TODO move fps into main engine
 end
 
 $score = 0
@@ -168,26 +199,36 @@ def draw_gl_scene
 
   @m.render
 
-
-  $bla.each do |x|
+  $engine.objects.each do |x|
     x.render
   end
-  $bla.first.render
+  $engine.fpstext.render
+
+  $engine.messages.each { |message| message.render }
 end
 
-def reset2 score0=true
+def level_up
+      go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "level up!")
+    go.extend(Pulsing)
+    go.reinit
+    $engine.timer.call_later(3000) do $engine.messages = [] end
+    $engine.messages << go
+end
 
-  if $bla.nil?
-    $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")]
-    $bla.first.extend(TopLeftPositioning)
-  else
-    $bla = $bla.slice(0..0)
-  end
-  $thing_not_to_intersect = []# [@m]
-  5.times do |t|
-    x = 100
-    y = (t+1) * 83
-    foo = Circle.new(x, y, $mousedef, $ene)
+def game_over
+      $scoreges = 0   # TODO cleanup
+    go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
+    go.extend(Pulsing)
+    go.reinit
+    #$engine.timer.pause
+    $engine.timer.call_later(3000) do $engine.messages = [] end
+    $engine.messages << go
+end
+
+def spawn_enemy num
+      x = 100
+    y = (num+1) * 83
+    foo = Circle.new(x, y, $mousedef, $ene[rand($ene.length)])
     foo.extend(Velocity)
     foo.reinit2
     #foo.extend(Gravity)
@@ -195,13 +236,21 @@ def reset2 score0=true
     foo.extend(DoNotIntersect)
     foo.v.x = Float.rand(-1,1)
     foo.v.y = Float.rand(-1,1)
-    $bla << foo
+    $engine.objects << foo
     $thing_not_to_intersect << foo
+end
 
+def reset2 score0=true
+
+  $engine.objects = []
+
+  $thing_not_to_intersect = []# [@m]
+  5.times do |t|
+    spawn_enemy t
   end
 
-  $score = 0
-  $scoreges = 0 if score0
+  $score = 0 # TODO cleanup
+  score0 ? game_over : level_up
 end
 
 def on_key_down key
@@ -225,7 +274,8 @@ class Circle < Square
   def initialize(x, y, size, text=nil)
     super x, y, size
     @texture = text
-    @texture = $tex[rand($tex.length)] if @texture.nil? #$p1
+    @texture = $m.gonna_spawn if @texture.nil?
+    @r = $m.r
     @colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
   end
 end
@@ -240,7 +290,6 @@ def on_mouse_down button, x, y
     $thing_not_to_intersect.each { |t|
       $engine.timer.pause
       puts "pos #{t.pos} -- size : #{t.size}"
-
     }
   end
 end
@@ -250,46 +299,18 @@ def on_mouse_up button, x, y
   when SDL::Mouse::BUTTON_RIGHT then
     @m.shrinking = false
   when SDL::Mouse::BUTTON_LEFT then
-
-    # TODO let things have a mass...
-    s =  @m.size.x
-    foo = Circle.new(x, y, s)
-    foo.extend(Velocity)
-    foo.reinit2
-    foo.extend(Gravity)
-    foo.extend(Bounded)
-    foo.extend(DoNotIntersect)
-    foo.v.x = Float.rand(-1,1)
-    foo.v.y = Float.rand(-1,1)
-    #foo.extend(Rotating)
-    #foo.r = rand(1000)
-    # TODO dont allow creation in something else...
-
-    $bla << foo
-    $score += (2 * foo.size.x *  2* foo.size.x * 3.14 / 4) / (XWINRES * YWINRES)
-    $scoreges += (2 * foo.size.x *  2* foo.size.x * 3.14 / 4) / (XWINRES * YWINRES)
-    $thing_not_to_intersect << foo
-
-    reset2(false) if $score > 0.5
-
-    @m.growing = false
-    @m.size = V2.new($mousedef, $mousedef)
-
-    unless get_collider(foo).nil?
-      reset2
-    end
-
+    @m.spawn_ball
   when SDL::Mouse::BUTTON_MIDDLE then
   end
 end
 
 def on_mouse_move x, y
-#  oldx = @m.pos.x
-#  oldy = @m.pos.y
+  #  oldx = @m.pos.x
+  #  oldy = @m.pos.y
   @m.pos.x = x
   @m.pos.y = y
-#  @m.v.x = (@m.pos.x - oldx) / 10
-#  @m.v.y = (@m.pos.y - oldy) / 10
+  #  @m.v.x = (@m.pos.x - oldx) / 10
+  #  @m.v.y = (@m.pos.y - oldy) / 10 # TODO calculate speed and pass it to spawns
 end
 
 def sdl_event event
@@ -306,26 +327,34 @@ def sdl_event event
   end
 end
 
-
-$mousedef = 40
+$mousedef = 40 # TODO cleanup
 class Engine
+  attr_accessor :messages, :objects, :fpstext
+
   def prepare
+    @messages = []
+    $engine.fpstext = Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")
+    $engine.fpstext.extend(TopLeftPositioning)
+
     $tex = []
-
-    Dir.entries("gfx/filler").reject { |e| not e =~ /.*\.png/}.each { |fn|
-
-      thef = "gfx/filler/#{fn}"
+    good = "gfx/filler/good/"
+    Dir.entries(good).reject { |e| not e =~ /.*\.png/}.each { |fn|
+      thef = "#{good}#{fn}"
       #puts thef
       text = Texture.load_file(thef)
       $tex << text
-
-      $ene = text if fn == "emblem-danger.png"
-
     }
 
-    $p1 = Texture.load_file("gfx/a.png")
-    $p2 = Texture.load_file("gfx/b.png")
-    @m = Mouse.new(100, 100, $mousedef, $p2)
+    $ene = []
+    bad = "gfx/filler/bad/"
+    Dir.entries(bad).reject { |e| not e =~ /.*\.png/}.each { |fn|
+      thef = "#{bad}#{fn}"
+      #puts thef
+      text = Texture.load_file(thef)
+      $ene << text
+    }
+
+    $m = @m = Mouse.new(100, 100, $mousedef)#, nil) # TODO unglobalize
 
     # TODO kill bla
     reset2
@@ -370,7 +399,6 @@ module Velocity
     super
     @pos.x += @v.x * dt
     @pos.y += @v.y * dt
-
   end
 end
 
@@ -378,11 +406,20 @@ end
 module Gravity
   def tick dt
     super
+
+    delta = 3
+    suckup = -0.5
+    if @pos.y  > YWINRES - @size.y - delta
+      @v.y *= 0.3 if @v.y > suckup and @v.y < 0
+      return
+    end
+
     @v.y += dt * 0.01           # axis is downwards # TODO check if this is indepent of screen size
-        if @v.y > 0 and @v.y < dt * 0.01
-      log "danger"
-#      @v.y = 0
-#      @pos.y = YWINRES - @size.y
+
+    if @v.y > 0 and @v.y < dt * 0.01
+      #log "danger" # TODO craashed here when run from terminal
+      #      @v.y = 0
+      #      @pos.y = YWINRES - @size.y
     end
   end
 end
@@ -398,7 +435,7 @@ module Bounded
     @v.y *= @@bounce
   end
 
-  def tick dt
+  def tick dt # TODO cleanup
     super
     # TODO objects "hovering" the bottom freak out sometimes
     if @pos.x < @size.x
@@ -422,26 +459,41 @@ module Bounded
     if @pos.y > YWINRES - @size.y
       @pos.y = (YWINRES - @size.y) #- (@pos.y - (YWINRES - @size.y))
       @v.y = -@v.y
+      #      #      log "bouncing floor @ #{@v}"
+      #      if @v.y > - 1
+      #        #        puts "speed to low, resetting"
+      #        @v.y = 0
+      #        @pos.y = YWINRES - @size.y
+      #      end
       weaken
     end
-
   end
 end
 
 module DoNotIntersect
   def tick dt
+    if @stack_level.nil?
+      @stack_level = 0
+    end
+    @stack_level += 1
+
     old_pos = @pos.clone
     super dt
 
     collider = get_collider(self)
 
     unless collider.nil?
-      @pos = old_pos # TODO having them not move at all is not correct, either
+      @pos = old_pos # TODO having them not move at all is not correct, either -- prevent them from getting stuck to each other
       r1, r2 = collide(self.pos, collider.pos, self.v, collider.v, self.size.x ** 2 , collider.size.x ** 2)
 
       self.v = r1 * $bounce
       collider.v = r2 * $bounce
+      
+      if @stack_level < 3 # TODO revise
+        tick dt
+      end
     end
+    @stack_level -= 1
   end
 end
 
