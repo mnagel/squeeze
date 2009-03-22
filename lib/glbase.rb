@@ -3,7 +3,7 @@
 
 =begin
     tictactoe - tic tac toe game
-    Copyright (C) 2008, 2009 by Michael Nagel
+    Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 =end
 
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
+# TODO rename configurations
 
 XWINRES = 750
 YWINRES = 750
@@ -200,10 +201,12 @@ class Entity
       end
       translate; scale; rotate;
 
-      draw_bounding_box if $SHOW_BOUNDING_BOXES
-
       yield if block_given?      
       @subs.each do |sub| sub.render end
+
+
+      draw_bounding_box if $SHOW_BOUNDING_BOXES
+
     end if @visible
   end
 
@@ -509,7 +512,7 @@ class Timer
   end
 end
 
-class Engine
+class GFXEngine
   attr_accessor :running, :timer
   
   def initialize
@@ -535,7 +538,7 @@ class Engine
       
       delta = @timer.tick
 
-      update_world delta
+      update_gfx delta
       draw_gl_scene
       
       SDL.GLSwapBuffers

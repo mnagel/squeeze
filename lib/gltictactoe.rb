@@ -2,7 +2,7 @@
 
 =begin
     tictactoe - tic tac toe game
-    Copyright (C) 2008, 2009 by Michael Nagel
+    Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -180,8 +180,9 @@ end
 # TODO : use lines from glbase...
 def draw_grid
   GL::LineWidth(2.8)
-  @c = [1,1,0,1]
-  @d = [1,0,1,1]                  
+  a = 0.5
+  @c = [0,a,0,1]
+  @d = [0,a,0,1]
   
   GL.Begin(GL::LINES)
   for x in [200,400]
@@ -203,7 +204,7 @@ def draw_grid
   GL.End()   
 end
 
-def update_world dt
+def update_gfx dt
   $game.field.each { |x,y,o|
     o.gfx.tick dt
   }
@@ -305,7 +306,7 @@ def sdl_event event
   end
 end
 
-class Engine
+class GFXEngine
   def prepare
     $welcome = nil
     $game = TicTacToeGL.new
@@ -339,7 +340,7 @@ end
 
 begin
   puts INFOTEXT
-  $engine = Engine.new
+  $engine = GFXEngine.new
   $engine.prepare
   $engine.run!
 rescue => exc

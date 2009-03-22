@@ -41,36 +41,83 @@
     </head>
     <body>
 
-        <h1>Welcome to TicTacToe...</h1>
+        <a href="javascript:show('ttt')"><h1><img src="website/tictactoe-screenshot.png" width="76" height="78" alt="screenshot"/> For TicTacToe click here...</h1></a>
+        <div id="ttt" style="display:none;">
+            <p>tictactoe - tic tac toe game<br />
+            Copyright (C) 2008, 2009 by Michael Nagel<br /></p>
 
-        <p>tictactoe - tic tac toe game<br />
-        Copyright (C) 2008, 2009 by Michael Nagel<br /></p>
+            <img src="website/tictactoe-screenshot.png" width="760" height="784" alt="screenshot"/>
 
-        <img src="website/screenshot.png" width="760" height="784" alt="screenshot"/>
+            <h2>Installation (under ubuntu)</h2>
+            <ol>
+                <li>run in terminal:
+                <br /><pre>sudo apt-get install ruby libopengl-ruby libsdl-ruby </pre></li>
+                <li><a href="website/downloads/">click here to download</a>, select 'glgames'</li>
+                <li>extract the archive</li>
 
-        <h2>Installation (under ubuntu)</h2>
-        <ol>
-            <li>run in terminal:
-            <br /><pre>sudo apt-get install ruby libopengl-ruby libsdl-ruby </pre></li>
-            <li><a href="website/downloads/">click here to download the game</a></li>
-            <li>extract the archive</li>
+            </ol>
 
-        </ol>
+            <h2>Starting the Game</h2>
+            <ol>
+                <li>open a terminal and change to the folder where you unpacked, probably like this:
+                <br /><pre>cd $HOME/Desktop/*glgames</pre> </li>
+                <li>run in terminal:
+                <br /><pre>pwd; ruby ./lib/gltictactoe.rb</pre></li>
+            </ol>
 
-        <h2>Starting the Game</h2>
-        <ol>
-            <li>open a terminal and change to the folder where you unpacked, probably like this:
-            <br /><pre>cd $HOME/Desktop/*tictactoe</pre> </li>
-            <li>run in terminal:
-            <br /><pre>pwd; ruby ./lib/gltictactoe.rb</pre></li>
-        </ol>
+            <h2>Target</h2>
+            <ol>
+                <li>play TicTacToe</li>
+                <li>get three in a row</li>
+            </ol>
 
-        <h2>Controls</h2>
-        <ol>
-            <li>left mouse: set a piece</li>
-            <li>right mouse: restart game</li>
-            <li>middle mouse: let the computer move</li>
-        </ol>
+            <h2>Controls</h2>
+            <ol>
+                <li>left mouse: set a piece</li>
+                <li>right mouse: restart game</li>
+                <li>middle mouse: let the computer move</li>
+            </ol>
+        </div>
+
+        <!-- SPLITTER SPLITTER SPLITTER SPLITTER SPLITTER SPLITTER SPLITTER SPLITTER  -->
+
+        <a href="javascript:show('filler')"><h1><img src="website/filler-screenshot.png" width="76" height="78" alt="screenshot"/> For Filler click here...</h1></a>
+        <div id="filler" style="display:none;">
+
+            <p>filler - filler game<br />
+            Copyright (C) 2009 by Michael Nagel<br /></p>
+
+            <img src="website/filler-screenshot.png" width="760" height="784" alt="screenshot"/>
+
+            <h2>Installation (under ubuntu)</h2>
+            <h3>(requires 8.10 intrepid ibex, or later)</h3>
+            <ol>
+                <li>run in terminal:
+                <br /><pre>sudo apt-get install ruby libopengl-ruby libsdl-ruby </pre></li>
+                <li><a href="website/downloads/">click here to download</a>, select 'glgames'</li>
+                <li>extract the archive</li>
+
+            </ol>
+
+            <h2>Starting the Game</h2>
+            <ol>
+                <li>open a terminal and change to the folder where you unpacked, probably like this:
+                <br /><pre>cd $HOME/Desktop/*glgames</pre> </li>
+                <li>run in terminal:
+                <br /><pre>pwd; ruby ./lib/glfiller.rb</pre></li>
+            </ol>
+
+            <h2>Target</h2>
+            <ol>
+                <li>fill the screen the bubbles</li>
+                <li>avoid getting hit while creating a bubble</li>
+            </ol>
+
+            <h2>Controls</h2>
+            <ol>
+                <li>left mouse: create a bubble, hold to increase size</li>
+            </ol>
+        </div>
     </body>
 </html>
 
