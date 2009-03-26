@@ -3,6 +3,9 @@ $:.unshift File.join(File.dirname(__FILE__),'..','lib')
 require 'test/unit'
 require 'v_math'
 
+
+# TODO add test code...
+
 class VMathTest < Test::Unit::TestCase
   def test_addition
     x = V2.new(0, 0)

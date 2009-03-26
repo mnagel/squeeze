@@ -22,6 +22,8 @@
 
 =end
 
+# TODO add rdoc to svn/website
+# TODO prepare for ruby 1.9
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
 # TODO rename configurations
 
@@ -158,7 +160,7 @@ class Texture
       sdlsurface = SDL::Surface.load(filename)
       return self.from_sdl_surface(sdlsurface, false)
     rescue => exc
-      STDERR.puts("#{filename} coult not be loaded as texture as expected")
+      STDERR.puts("#{filename} could not be loaded as texture as expected")
       return self.none
     end
   end
@@ -336,7 +338,7 @@ class Text < Rect
     # re render texture
     @texture = Texture.render_text(text, @font)
     @size = V.new
-    @size.y, @size.x = 1, 1 # @texture.w.to_f/@texture.h.to_f # FIXME!!!
+    @size.y, @size.x = 1, 1 # FIXME explain the magic numbers
     
     @size.x = @texture.size.x * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
     @size.y = @texture.size.y  * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size

@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby -wKU
 
 =begin
+    # TODO new copyright notice for all filler related stuff...
     tictactoe - tic tac toe game
     Copyright (C) 2009 by Michael Nagel
 
@@ -27,13 +28,13 @@
 # TODO have multiple lives
 # TODO show "you scored... " on gameover
 # FIXME infinite growth in corners possible, generally out of screen growth...
-# TODO make perfectly round graphics and use them...
-# TODO install fast debugger
 # TODO add sound
 # TODO no multiple simultaneous restarts
 # TODO windows version?
 # TODO seperate backend from graphics so you can stop one at a time...
 # TODO release version online, cleanup 'downloads' folder
+# TODO seperate graphics from backend -- two files
+# TODO reintroduce mode with loads of different images...
 
 # TODO clean these strings
 $LOAD_PATH << './lib'
@@ -152,8 +153,6 @@ class Mouse < Entity
       $scoreges += points
       $thing_not_to_intersect << ball
     else
-      foo.texture = Texture.load_file('gfx/filler/mouse.png')
-      ball.texture = Texture.load_file('gfx/filler/media-rewind.png') # TODO fixme
       game_over
     end
 
@@ -198,7 +197,7 @@ class Mouse < Entity
   end
 end
 
-def collide? obj, obj2 # TODO speedup (parent method) by sorting them
+def collide? obj, obj2 # TODO speedup (the parent method) by sorting them
   dx = obj.pos.x - obj2.pos.x
   dy = obj.pos.y - obj2.pos.y
   #puts "dx #{dx} -- dy #{dy}"
@@ -282,6 +281,7 @@ def start_level lvl=0
 end
 
 def game_over
+  # TODO pause the game, and "explain" game over reason
   $scoreges = 0
   go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
   go.extend(Pulsing)
