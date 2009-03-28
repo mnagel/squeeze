@@ -24,16 +24,15 @@
 
 # TODO offer tutorial
 # TODO on crash: pause game for some time and mark where crash happened
-# TODO profile and speed up codeppro
+# TODO profile and speed up code
 # TODO have multiple lives
 # TODO show "you scored... " on gameover
 # FIXME infinite growth in corners possible, generally out of screen growth...
 # TODO add sound
 # TODO no multiple simultaneous restarts
 # TODO seperate backend from graphics so you can stop one at a time...
-# TODO release version online, cleanup 'downloads' folder
 # TODO seperate graphics from backend -- two files
-# TODO reintroduce mode with loads of different images...
+# TODO reintroduce mode with lots of different images...
 
 # TODO clean these strings
 $LOAD_PATH << './lib'
@@ -86,7 +85,7 @@ class Mouse < Entity
   
   def initialize x, y, size
     super x, y, size, size
-    @v = V2.new(0, 0)
+    @v = Math::V2.new(0, 0)
     @gcolors = @colors = ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end
     @rcolors = ColorList.new(3) do Color.random(0.8, 0, 0, 0.7) end
 
@@ -155,7 +154,7 @@ class Mouse < Entity
 
 
     @growing = false
-    @size = V2.new($mousedef, $mousedef)
+    @size = V.new($mousedef, $mousedef)
 
 
             $engine.objects << ball
@@ -235,15 +234,13 @@ def update_gfx dt
   @messages.each { |message| message.tick dt }
   @m.tick dt
 
+
+  @scoretext.set_text("score: #{($score * 100).to_i}, ges: #{($scoreges * 100).to_i}")
+  @scoretext.tick dt
+
   $engine.objects.each do |x|
     x.tick dt
   end
-
-  $engine.fpstext.tick dt
-  
-  $engine.fpstext.set_text "rendering @#{$engine.timer.ticks_per_second}fps \n score: #{($score * 100).to_i}," +
-    " ges: #{($scoreges * 100).to_i}"
-  ## TODO move fps into main engine
 end
 
 $score = 0
@@ -264,9 +261,9 @@ def draw_gl_scene
     x.render
   end
 
+  @scoretext.render
     @m.render
 
-  $engine.fpstext.render
 
 
   $engine.messages.each { |message| message.render }
@@ -406,12 +403,12 @@ end
 
 $mousedef = 40 # TODO cleanup
 class GFXEngine
-  attr_accessor :messages, :objects, :fpstext
+  attr_accessor :messages, :objects, :scoretext
 
   def prepare
     @messages = []
-    $engine.fpstext = Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")
-    $engine.fpstext.extend(TopLeftPositioning)
+    @scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "SCORE GO HERE")
+    @scoretext.extend(TopLeftPositioning)
 
     $tex = []
     good = "gfx/filler/good/"
@@ -435,34 +432,10 @@ class GFXEngine
   end
 end
 
-# TODO put this somewhere better
-def collide p1, p2, v1, v2, m1, m2
-  # normal and tangential directions
-  normal     = p2 - p1
-  tangential = normal.normal
-
-  # split movement in normal/tangential component
-  v1n = normal.unit.dot(v1)
-  v1t = tangential.unit.dot(v1)
-
-  v2n = normal.unit.dot(v2)
-  v2t = tangential.unit.dot(v2)
-
-  # calculate new normal components (primed ('))
-  v1np = (v1n * (m1-m2) + 2 * m2 * v2n) / (m1 + m2)
-  v2np = (v2n * (m2-m1) + 2 * m1 * v1n) / (m1 + m2)
-
-  # add new normal * normal_direction to old tangential to get result
-  res1 = (tangential.unit * v1t) + (normal.unit * v1np)
-  res2 = (tangential.unit * v2t) + (normal.unit * v2np)
-
-  return res1, res2
-end
-
 # TODO move from graphics to backend model!
 module Velocity
   def reinit2
-    @v = V2.new
+    @v = V.new
   end
 
   attr_accessor :v
@@ -538,7 +511,7 @@ module DoNotIntersect
 
     unless collider.nil?
       @pos = old_pos # TODO having them not move at all is not correct, either -- prevent them from getting stuck to each other
-      r1, r2 = collide(self.pos, collider.pos, self.v, collider.v, self.size.x ** 2 , collider.size.x ** 2)
+      r1, r2 = Math::collide(self.pos, collider.pos, self.v, collider.v, self.size.x ** 2 , collider.size.x ** 2)
 
       self.v = r1 * $bounce
       collider.v = r2 * $bounce

@@ -228,7 +228,6 @@ def update_gfx dt
   end
 
   $bla.each do |x| x.tick dt;  end
-  $bla.first.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
 end
 
 def draw_gl_scene
@@ -337,9 +336,7 @@ class GFXEngine
     #@m.extend(Rotating)
 
     # TODO kill bla
-    # TODO include fps in the base code...
-    $bla = [Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")]
-    $bla.first.extend(TopLeftPositioning)
+    $bla = []
     $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), FONTFILE, "TIC TAC TOE")
     $engine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome

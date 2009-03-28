@@ -26,6 +26,8 @@
 # TODO prepare for ruby 1.9
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
 # TODO rename configurations
+# TODO use finalizers, private attributes, getters, setters ...
+# TODO add documentation
 
 XWINRES = 750
 YWINRES = 750
@@ -40,15 +42,11 @@ FONTSIZE_ADJUSTMENT_HACK = 3
 $SHOW_BOUNDING_BOXES = false
 
 require 'v_math'
-V = V2
+V = Math::V2
 
 require "sdl"
 require "opengl"
 require "logger"
-
-# TODO finalizers, private attributes, getters, setters ...
-# TODO document!!!
-# TODO add a script that prepares releases (tar everything execpt of .svn)
 
 class Color
   def r
@@ -130,15 +128,14 @@ class Texture
   end
   
   # TODO : remember to call kill!() at the end -- have it have some kind of finalizer
-  
-    # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die texture nur hier verwendet wird!
+  # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die texture nur hier verwendet wird!
   def initialize handle, w, h
     @size = V.new
     @gl_handle, @size.x, @size.y = handle, w, h
   end
   
   def self.from_sdl_surface surf, swapcolors = false
-        my_gl_handle = GL.GenTextures(1).first;
+    my_gl_handle = GL.GenTextures(1).first;
     
     STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
       create them before init of sdl/opengl has finished?!?" if my_gl_handle > 3000000
@@ -243,15 +240,15 @@ class Entity
     GL.End()
   end
 
-    def translate
-      GL.Translate(@pos.x, @pos.y, @z)
-    end
+  def translate
+    GL.Translate(@pos.x, @pos.y, @z)
+  end
 
-    def scale
-      GL.Scale(@size.x, @size.y, 1)
-    end
+  def scale
+    GL.Scale(@size.x, @size.y, 1)
+  end
 
-    def rotate
+  def rotate
     GL.Rotate(@r,0,0,1)
   end
   
@@ -312,7 +309,7 @@ end
 
 class Triangle < OpenGL2D
 
-@@TAN30 = 0.577;
+  @@TAN30 = 0.577;
 
   def render
     super do
@@ -335,6 +332,8 @@ class Text < Rect
   attr_reader :text
   
   def set_text text
+    return if (text == @text)
+    @text = text
     @texture.kill! unless @texture.nil?
     # re render texture
     @texture = Texture.render_text(text, @font)
@@ -346,6 +345,7 @@ class Text < Rect
   end
   
   def initialize x, y, fontsize, color, font, text
+    @text = "this_is_a_text_to_never_match_)@(3"
     @color = color
     @fontsize = fontsize
     @colors = ColorList.new(4) { |i| color }
@@ -516,7 +516,7 @@ class Timer
 end
 
 class GFXEngine
-  attr_accessor :running, :timer
+  attr_accessor :running, :timer, :fpstext
   
   def initialize
     @timer = Timer.new
@@ -526,6 +526,9 @@ class GFXEngine
     init_gl_window(XWINRES, YWINRES)
     SDL::WM.setCaption(TITLE, "")
     SDL::Mouse.hide()
+
+    @fpstext = Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")
+    @fpstext.extend(TopLeftPositioning)
   end
 
   def window_title=(title)
@@ -541,9 +544,13 @@ class GFXEngine
       
       delta = @timer.tick
 
+      @fpstext.tick delta
+      @fpstext.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
+
       update_gfx delta
       draw_gl_scene
-      
+
+      @fpstext.render
       SDL.GLSwapBuffers
     end
   end
