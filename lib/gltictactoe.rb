@@ -24,7 +24,18 @@
 # TODO clean constants
 $LOAD_PATH << './lib'
 
-FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
+ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
+  "/usr/share/fonts/bitstream-vera/Vera.ttf"
+]
+
+if FileTest.exists?(ps[0])
+  FONTFILE = ps[0]
+elsif FileTest.exists?(ps[1])
+  FONTFILE = ps[0]
+else
+  throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
+end
+
 INFOTEXT = <<EOT
     tictactoe - tic tac toe game
     Copyright (C) 2008, 2009 by Michael Nagel

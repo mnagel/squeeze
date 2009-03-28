@@ -24,13 +24,12 @@
 
 # TODO offer tutorial
 # TODO on crash: pause game for some time and mark where crash happened
-# TODO profile and speed up code
+# TODO profile and speed up codeppro
 # TODO have multiple lives
 # TODO show "you scored... " on gameover
 # FIXME infinite growth in corners possible, generally out of screen growth...
 # TODO add sound
 # TODO no multiple simultaneous restarts
-# TODO windows version?
 # TODO seperate backend from graphics so you can stop one at a time...
 # TODO release version online, cleanup 'downloads' folder
 # TODO seperate graphics from backend -- two files
@@ -39,7 +38,18 @@
 # TODO clean these strings
 $LOAD_PATH << './lib'
 
-FONTFILE = "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf"
+ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
+  "/usr/share/fonts/bitstream-vera/Vera.ttf"
+]
+
+if FileTest.exists?(ps[0])
+  FONTFILE = ps[0]
+elsif FileTest.exists?(ps[1])
+  FONTFILE = ps[0]
+else
+  throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
+end
+
 INFOTEXT = <<EOT
     tictactoe - tic tac toe game
     Copyright (C) 2008, 2009 by Michael Nagel
@@ -147,11 +157,13 @@ class Mouse < Entity
     @growing = false
     @size = V2.new($mousedef, $mousedef)
 
+
+            $engine.objects << ball
+      $thing_not_to_intersect << ball
+
     if (foo = get_collider(ball)).nil?
-      $engine.objects << ball
       $score += points
       $scoreges += points
-      $thing_not_to_intersect << ball
     else
       game_over
     end
@@ -282,6 +294,7 @@ end
 
 def game_over
   # TODO pause the game, and "explain" game over reason
+  # $engine.timer.pause
   $scoreges = 0
   go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
   go.extend(Pulsing)

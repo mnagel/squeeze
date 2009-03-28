@@ -48,6 +48,7 @@ require "logger"
 
 # TODO finalizers, private attributes, getters, setters ...
 # TODO document!!!
+# TODO add a script that prepares releases (tar everything execpt of .svn)
 
 class Color
   def r
