@@ -31,7 +31,7 @@ ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
 if FileTest.exists?(ps[0])
   FONTFILE = ps[0]
 elsif FileTest.exists?(ps[1])
-  FONTFILE = ps[0]
+  FONTFILE = ps[1]
 else
   throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
 end
