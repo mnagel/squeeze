@@ -22,13 +22,10 @@
 =end
 
 # TODO offer tutorial
-# TODO on crash: pause game for some time and mark where crash happened, show score
 # TODO profile and speed up code
-# TODO multiple lives
-# TODO stop growth out of screen
-# TODO add sound
-# TODO no multiple simultaneous restarts
-# TODO allow stopping engine without stopping graphics
+# TODO highscore + multiple lives
+# TODO game over if spawning out of screen
+# TODO add sound effects
 # TODO add local/global setting files...
 
 $LOAD_PATH << './lib'
@@ -75,6 +72,7 @@ class Mouse < Entity
 
 
   def spawn_ball
+    return unless $engine.engine_running
     # TODO let things have a mass...
     s =  @size.x
     ball = Circle.new(@pos.x, @pos.y, s)
@@ -89,7 +87,7 @@ class Mouse < Entity
     ball.v = self.v.clone.unit
     a= Text.new(0, 0, 5, Color.new(1,0,0,1), FONTFILE, (100 * points).to_i.to_s)
     a.extend(Pulsing); a.reinit
-    $gfxengine.timer.call_later(1000) do ball.subs = [] end
+    $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
     ball.subs << a
 
@@ -97,7 +95,7 @@ class Mouse < Entity
     @pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
 
     @growing = false
-    @size = V.new($mousedef, $mousedef)
+    @size = V.new(Settings.mousedef, Settings.mousedef)
 
     $engine.objects << ball
     $engine.thing_not_to_intersect << ball
@@ -135,8 +133,8 @@ class Mouse < Entity
   def tick dt
     super dt
     x = 0.1
-    grow(+dt * x) if @growing
-    grow(-dt * x) if @shrinking
+    grow(+dt * x) if @growing and $engine.engine_running
+    grow(-dt * x) if @shrinking and $engine.engine_running
     @pict.texture = @gonna_spawn
     
     coll = $engine.get_collider(self)
@@ -145,33 +143,32 @@ class Mouse < Entity
     else
       @green.colors = @rcolors
     end
-
-
-    #        if @pos.x < @size.x or  @pos.y < @size.y or @pos.x > XWINRES - @size.x or @pos.y > YWINRES - @size.y
-    #
-    #      spawn_ball
-    #        end
-
-
-
-    
-
-
-
   end
 end
 
-
-
 class FillerGameEngine
 
-  attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect, :score, :scoreges, :cur_level
+  attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect, :score, :scoreges, :cur_level, :ingame_timer, :external_timer, :engine_running
+
+  def update delta
+    @external_timer.tick
+    return unless @engine_running
+    real = delta # TODO to make compiler happy
+    real = @ingame_timer.tick
+
+    $engine.objects.each do |x|
+      x.tick real
+    end
+  end
 
   def prepare
+    @ingame_timer = Timer.new
+    @external_timer = Timer.new
+    @engine_running = true
     @score = @scoreges = 0
 
     $gfxengine.prepare # TODO put to end, remove things mouse depends on!
-    @m = Mouse.new(100, 100, $mousedef) # TODO unglobalize
+    @m = Mouse.new(100, 100, Settings.mousedef)
     @cur_level = 0
     start_level @cur_level
   end
@@ -198,19 +195,19 @@ class FillerGameEngine
     return res
   end
 
-
   def start_level lvl
+    @engine_running = true
     if lvl > 0
       go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "level up!")
       go.extend(Pulsing)
       go.reinit
-      $gfxengine.timer.call_later(3000) do $engine.messages = [] end
+      $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go
     end
 
     $engine.objects = []
 
-    @thing_not_to_intersect = []# [@m]
+    @thing_not_to_intersect = []
     (lvl + 2).times do |t|
       spawn_enemy
     end
@@ -219,27 +216,30 @@ class FillerGameEngine
   end
 
   def game_over
-    # TODO pause the game, and "explain" game over reason
-    # $gfxengine.timer.pause
-    go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
+    @engine_running = false
+    sc = Text.new(XWINRES/2, YWINRES * 0.6, 240, Color.new(255, 255, 255, 0.8), FONTFILE, "#{($engine.scoreges * 100).to_i}")
+    go = Text.new(XWINRES/2, YWINRES * 0.4, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
     go.extend(Pulsing)
     go.reinit
-    $gfxengine.timer.call_later(3000) do $engine.messages = [] end
-    $engine.messages << go
-    $gfxengine.timer.call_later(3500) do @scoreges = 0; @cur_level = 0; start_level @cur_level end
+    sc.extend(Pulsing)
+    sc.reinit
+    $engine.messages << go << sc
+    $engine.ingame_timer.wipe!(false)
+    $engine.external_timer.wipe!(false)
+    $engine.external_timer.call_later(3000) do $engine.messages = [] end
+    $engine.external_timer.call_later(3500) do @scoreges = 0; @cur_level = 0; start_level @cur_level end
   end
 
   def spawn_enemy
     begin
-      x = Float.rand($mousedef, XWINRES - $mousedef)
-      y = Float.rand($mousedef, YWINRES - $mousedef)
+      x = Float.rand(Settings.mousedef, XWINRES - Settings.mousedef)
+      y = Float.rand(Settings.mousedef, YWINRES - Settings.mousedef)
 
-      spawning = Circle.new(x, y, $mousedef, $ene[rand($ene.length)])
+      spawning = Circle.new(x, y, Settings.mousedef, $ene[rand($ene.length)])
     end until get_collider(spawning).nil?
 
     spawning.extend(Velocity)
     spawning.reinit2
-    #foo.extend(Gravity)
     spawning.extend(Bounded)
     spawning.extend(DoNotIntersect)
     spawning.v.x = Float.rand(-1,1)
@@ -248,17 +248,19 @@ class FillerGameEngine
     @thing_not_to_intersect << spawning
   end
 
-
-
   def on_key_down key
     case key
     when SDL::Key::ESCAPE then
       $gfxengine.kill!
     when 48 then # Zero
-      Settings.sHOW_BOUNDING_BOXES = (not Settings.show_bounding_boxes)
+      Settings.show_bounding_boxes = (not Settings.show_bounding_boxes)
     when 97 then # A
       on_mouse_down(SDL::Mouse::BUTTON_MIDDLE, @m.pos.x, @m.pos.y)
     when 98 then # B
+      $gfxengine.timer.toggle
+    when 103 then # G
+      $engine.ingame_timer.toggle
+    when 104 then # H
       $gfxengine.timer.toggle
     when SDL::Key::SPACE then
       game_over
@@ -266,7 +268,6 @@ class FillerGameEngine
       puts key
     end
   end
-
 
   def on_mouse_down button, x, y
     case button
@@ -294,23 +295,18 @@ class FillerGameEngine
     @m.v.x = (@m.pos.x - oldx) #/ 10
     @m.v.y = (@m.pos.y - oldy) #/ 10
   end
-
-
 end
 
-
-
 class Settings_
-  attr_accessor :bounce, :show_bounding_boxes
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef
 
   def initialize
 
     @bounce = 0.8
     @show_bounding_boxes = false
+    @mousedef = 40
   end
 end
-
-
 
 Settings = Settings_.new
 
@@ -357,10 +353,7 @@ module Gravity
   end
 end
 
-
-
 module Bounded
-
   @@bounce = Settings.bounce
 
   def weaken
@@ -398,7 +391,6 @@ module Bounded
 end
 
 module DoNotIntersect
-
   @@bounce = Settings.bounce
 
   def tick dt

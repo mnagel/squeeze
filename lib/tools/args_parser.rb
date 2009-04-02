@@ -21,7 +21,7 @@
 
 =end
 
-# TODO port back switching to oneshot
+# TODO port switching back to oneshot
 # TODO support reading from a file, too
 
 class Switch
@@ -44,7 +44,7 @@ def parse_args switches, helpswitch, noswitch, fileswitch
   ARGV.each_index { |i|
     next if notargs.include?(i)
 
-    arg = ''.replace(ARGV[i]) #FIXME: unfreeze
+    arg = ARGV[i].dup
 
     if arg[0..0] == '-'
       arg[1..-1].scan(/./) do |chr|

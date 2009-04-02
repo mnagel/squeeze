@@ -80,25 +80,17 @@ class Circle < Square
   end
 end
 
-$mousedef = 40 # TODO cleanup
 class GFXEngine
-
-
-  # TODO MOVE TO BACKEND!!!
+  # TODO this updates the model, put to backend...
   def update_gfx dt
+    $engine.update dt
+    
     $engine.messages.each { |message| message.tick dt }
     $engine.m.tick dt
 
-
     $engine.scoretext.set_text("score: #{($engine.score * 100).to_i}, total: #{($engine.scoreges * 100).to_i}")
     $engine.scoretext.tick dt
-
-    $engine.objects.each do |x|
-      x.tick dt
-    end
   end
-
- 
 
   def prepare
     $engine.messages = []
@@ -114,7 +106,7 @@ class GFXEngine
     }
 
     $ene = []
-    bad = BADGFX # "gfx/filler/bad/"
+    bad = BADGFX
     Dir.entries(bad).reject { |e| not e =~ /.*\.png/}.each { |fn|
       thef = "#{bad}#{fn}"
       text = Texture.load_file(thef)
