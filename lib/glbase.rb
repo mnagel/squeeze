@@ -2,7 +2,7 @@
 
 
 =begin
-    tictactoe - tic tac toe game
+    glgames - framework for some opengl games using ruby
     Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
@@ -39,14 +39,38 @@ UPDATERATE = 120 # ticks
 FREETYPE_FONTSIZE = 60
 FONTSIZE_ADJUSTMENT_HACK = 3
 
-$SHOW_BOUNDING_BOXES = false
+def get_fontpath
+  ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
+    "/usr/share/fonts/bitstream-vera/Vera.ttf"
+  ]
+
+  if FileTest.exists?(ps[0])
+    return ps[0]
+  elsif FileTest.exists?(ps[1])
+    return ps[1]
+  else
+    throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
+  end
+end
+
+FONTFILE = get_fontpath
+
+#$SHOW_BOUNDING_BOXES = false
 
 require 'v_math'
 V = Math::V2
 
-require "sdl"
-require "opengl"
-require "logger"
+def silently(&block) # TODO move to base
+  warn_level = $VERBOSE
+  $VERBOSE = nil
+  result = block.call
+  $VERBOSE = warn_level
+  result
+end
+
+silently do require 'sdl' end
+require 'opengl'
+require 'logger'
 
 class Color
   def r
@@ -205,7 +229,7 @@ class Entity
       @subs.each do |sub| sub.render end
 
 
-      draw_bounding_box if $SHOW_BOUNDING_BOXES
+      draw_bounding_box if  Settings.show_bounding_boxes #$SHOW_BOUNDING_BOXES
 
     end if @visible
   end
@@ -545,7 +569,7 @@ class GFXEngine
       delta = @timer.tick
 
       @fpstext.tick delta
-      @fpstext.set_text "rendering @#{$engine.timer.ticks_per_second}fps"
+      @fpstext.set_text "rendering @#{$gfxengine.timer.ticks_per_second}fps"
 
       update_gfx delta
       draw_gl_scene

@@ -24,18 +24,6 @@
 # TODO clean constants
 $LOAD_PATH << './lib'
 
-ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
-  "/usr/share/fonts/bitstream-vera/Vera.ttf"
-]
-
-if FileTest.exists?(ps[0])
-  FONTFILE = ps[0]
-elsif FileTest.exists?(ps[1])
-  FONTFILE = ps[1]
-else
-  throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
-end
-
 INFOTEXT = <<EOT
     tictactoe - tic tac toe game
     Copyright (C) 2008, 2009 by Michael Nagel
@@ -45,18 +33,20 @@ INFOTEXT = <<EOT
 EOT
 WINDOWTITLE = "gltictactoe.rb by Michael Nagel"
 
-def silently(&block)
-  warn_level = $VERBOSE
-  $VERBOSE = nil
-  result = block.call
-  $VERBOSE = warn_level
-  result
+#silently do require 'sdl' end
+#require 'opengl'
+require 'glbase'
+require 'tictactoe'
+
+class Settings_
+  attr_accessor :bounce, :show_bounding_boxes
+
+  def initialize
+    @show_bounding_boxes = false
+  end
 end
 
-silently do require "sdl" end
-require "opengl"
-require 'tictactoe'
-require 'glbase'
+Settings = Settings_.new
 
 class Float
   def self.rand min, max
@@ -92,7 +82,7 @@ class TicTacToeGL < TicTacToe
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
-    $engine.timer.call_later(3000) do $foobar = nil end
+    $gfxengine.timer.call_later(3000) do $foobar = nil end
   end
 
   def on_gameover
@@ -102,16 +92,16 @@ class TicTacToeGL < TicTacToe
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
-    $engine.timer.call_later(3000) do $foobar = nil end
+    $gfxengine.timer.call_later(3000) do $foobar = nil end
 
   end
       
   def on_game_start
     super
     return if $welcome.nil?
-    $engine.timer.wipe!
+    $gfxengine.timer.wipe!
     $welcome.visible = true
-    $engine.timer.call_later(3000) do $welcome.visible = false end
+    $gfxengine.timer.call_later(3000) do $welcome.visible = false end
   end
 end
 
@@ -256,7 +246,7 @@ def on_key_down key
   #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE then
-    $engine.kill!
+    $gfxengine.kill!
   when 48 then # Zero
     unless $game.gameover?
       a, b = $game.ki_get_move; 
@@ -267,7 +257,7 @@ def on_key_down key
     on_key_down(SDL::Key::SPACE)
     10.times { on_key_down(48) }
   when 98 then # B
-    $engine.timer.toggle
+    $gfxengine.timer.toggle
   when SDL::Key::SPACE then
     $game = TicTacToeGL.new
     #puts $game.to_s
@@ -306,7 +296,7 @@ end
 
 def sdl_event event
   if event.is_a?(SDL::Event2::Quit)
-    $engine.kill!
+    $gfxengine.kill!
   elsif event.is_a?(SDL::Event2::KeyDown)
     on_key_down event.sym
   elsif event.is_a?(SDL::Event2::MouseButtonDown)
@@ -338,19 +328,19 @@ class GFXEngine
     # TODO kill bla
     $bla = []
     $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), FONTFILE, "TIC TAC TOE")
-    $engine.timer.call_later(3000) do $welcome.visible = false end
+    $gfxengine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
     $welcome.extend(Pulsing)
     $welcome.reinit
-    $engine.window_title = WINDOWTITLE
+    $gfxengine.window_title = WINDOWTITLE
   end
 end
 
 begin
   puts INFOTEXT
-  $engine = GFXEngine.new
-  $engine.prepare
-  $engine.run!
+  $gfxengine = GFXEngine.new
+  $gfxengine.prepare
+  $gfxengine.run!
 rescue => exc
   STDERR.puts "there was an error: #{exc.message}"
   STDERR.puts exc.backtrace

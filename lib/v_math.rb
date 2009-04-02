@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -wKU
 
 =begin
-    v_math - mathematical/physical 2 dimensional vector class
+    glgames - framework for some opengl games using ruby
     Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify

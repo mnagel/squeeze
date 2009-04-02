@@ -4,7 +4,7 @@ list = []
 
 require 'find'
 dirs = ["lib", "gfx"]
-excludes = [".svn"]
+excludes = [".svn", "alt"]
 for dir in dirs
   Find.find(dir) do |path|
     if FileTest.directory?(path)
