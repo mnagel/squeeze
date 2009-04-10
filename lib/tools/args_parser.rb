@@ -21,7 +21,7 @@
 
 =end
 
-# TODO port switching back to oneshot
+# TODO port improved switching code back to oneshot
 # TODO support reading from a file, too
 
 class Switch

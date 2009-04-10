@@ -83,14 +83,6 @@ end
 require 'v_math'
 V = Math::V2
 
-def silently(&block) # TODO move to base
-  warn_level = $VERBOSE
-  $VERBOSE = nil
-  result = block.call
-  $VERBOSE = warn_level
-  result
-end
-
 silently do require 'sdl' end
 require 'opengl'
 require 'logger'
@@ -174,8 +166,7 @@ class Texture
     GL.DeleteTextures @gl_handle
   end
   
-  # TODO : remember to call kill!() at the end -- have it have some kind of finalizer
-  # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die Textur nur hier verwendet wird!
+  # TODO : remember to call kill!() at the end -- let it have some kind of finalizer
   def initialize handle, w, h
     @size = V.new
     @gl_handle, @size.x, @size.y = handle, w, h
@@ -424,13 +415,14 @@ module Rotating
 end
 
 module Pulsing
-  # FIXME auto-call in include/extend
-  # TODO write testcase for this, and find out why it does not work
-  def reinit
+    def self.extend_object(o)
+        super
+        o.instance_eval do
     @pulse = 0
     @pulsing = true
     @max_h = @size.y
     @max_w = @size.x
+        end # sneak in the v AUTOMATICALLY...
   end
     
   def tick dt

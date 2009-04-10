@@ -38,6 +38,14 @@ class Array
   end
 end
 
+def silently(&block)
+  warn_level = $VERBOSE
+  $VERBOSE = nil
+  result = block.call
+  $VERBOSE = warn_level
+  result
+end
+
 # TODO clean up..., have hash with key and proc...
 if a == "squeeze"
   $LOAD_PATH << './lib/squeeze'

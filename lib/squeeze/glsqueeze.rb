@@ -21,36 +21,6 @@
 
 =end
 
-require 'args_parser'
-switches = []
-@helpswitch = Switch.new('h', 'print help message',	false, proc { puts "this is oneshot #{THEVERSION}"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
-switches = [
-  Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
-
-  @helpswitch
-]
-
-fileswitch = proc { |val| puts "dont eat filenames, not even #{val}"};
-noswitch = proc {|someswitch| log "there is no switch '#{someswitch}'\n\n", LOG_ERROR; @helpswitch.code.call; Process.exit };
-
-helpswitch = @helpswitch
-
-$GFX_PATH = ''
-parse_args(switches, helpswitch, noswitch, fileswitch)
-
-inf = $GFX_PATH
-inf = '' if inf.nil?
-
-GOODGFX = "gfx/squeeze/#{inf}/good/"
-BADGFX  = "gfx/squeeze/#{inf}/bad/"
-WINDOWTITLE = "squeeze by Michael Nagel"
-
-silently do require 'sdl' end
-require 'opengl'
-require 'glbase'
-
-require 'v_math'
-
 def draw_gl_scene
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
   define_screen 600, 600
@@ -69,7 +39,7 @@ def draw_gl_scene
   $engine.messages.each { |message| message.render }
 end
 
-# TODO appropriate name
+# TODO rename circle so that is is clear what it really is (square + texture)
 class Circle < Square
   def initialize(x, y, size, text=nil)
     super x, y, size
@@ -81,9 +51,8 @@ class Circle < Square
 end
 
 class GLFrameWork
-  # TODO this updates the model, put to backend...
   def update_gfx dt
-    $engine.update dt
+    $engine.update dt # TODO reverse logic here, let the engine call the gfx
     
     $engine.messages.each { |message| message.tick dt }
     $engine.m.tick dt
@@ -98,7 +67,7 @@ class GLFrameWork
     $engine.scoretext.extend(TopLeftPositioning)
 
     $tex = []
-    good = GOODGFX
+    good = Settings.gfx_good
     Dir.entries(good).reject { |e| not e =~ /.*\.png/}.each { |fn|
       thef = "#{good}#{fn}"
       text = Texture.load_file(thef)
@@ -106,13 +75,11 @@ class GLFrameWork
     }
 
     $ene = []
-    bad = BADGFX
+    bad = Settings.gfx_bad
     Dir.entries(bad).reject { |e| not e =~ /.*\.png/}.each { |fn|
       thef = "#{bad}#{fn}"
       text = Texture.load_file(thef)
       $ene << text
     }
-
-    $gfxengine.window_title = WINDOWTITLE
   end
 end

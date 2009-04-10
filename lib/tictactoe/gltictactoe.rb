@@ -21,28 +21,24 @@
 
 =end
 
-# TODO clean constants
-$LOAD_PATH << './lib'
+require 'glbase'
+require 'tictactoe'
 
-INFOTEXT = <<EOT
+class Settings__ < Settings_
+  attr_accessor :show_bounding_boxes, :infotext
+
+  def initialize
+    super
+
+    @win_title = "gltictactoe.rb by Michael Nagel"
+
+    @infotext = <<EOT
     tictactoe - tic tac toe game
     Copyright (C) 2008, 2009 by Michael Nagel
 
     icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
     icons licensed under Creative Commons BY-NC-SA
 EOT
-WINDOWTITLE = "gltictactoe.rb by Michael Nagel"
-
-#silently do require 'sdl' end
-#require 'opengl'
-require 'glbase'
-require 'tictactoe'
-
-class Settings__ < Settings_
-  attr_accessor :show_bounding_boxes
-
-  def initialize
-    super
     
     @show_bounding_boxes = false
   end
@@ -60,7 +56,7 @@ class Mark
       :color_p1 => ColorList.new(3) do Color.random(1, 0, 0) end,  
       :color_p2 => ColorList.new(3) do Color.random(0, 0, 1) end)
     @gfx.extend(Pulsing)
-    @gfx.reinit
+    #    @gfx.reinit
     @gfx.pulsing = false
   end
 end
@@ -76,7 +72,7 @@ class TicTacToeGL < TicTacToe
     
     $foobar = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(0, 255, 0, 0.8), Settings.fontfile, "PLAYER #{winner} WINS!")
     $foobar.extend(Pulsing)
-    $foobar.reinit
+    #    $foobar.reinit
     $welcome.visible = false
     $gfxengine.timer.call_later(3000) do $foobar = nil end
   end
@@ -86,7 +82,7 @@ class TicTacToeGL < TicTacToe
     #puts "DRAWCODE"
     $foobar = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "DRAW")
     $foobar.extend(Pulsing)
-    $foobar.reinit
+    #    $foobar.reinit
     $welcome.visible = false
     $gfxengine.timer.call_later(3000) do $foobar = nil end
 
@@ -208,7 +204,7 @@ def update_gfx dt
 
   @m.tick dt
 
-  #TODO kill
+  # TODO rename foobar-variable
   unless $foobar.nil?
     $foobar.tick dt
   end
@@ -230,7 +226,7 @@ def draw_gl_scene
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.render
 
-  #TODO kill
+  # TODO rename foobar-variable
   unless $foobar.nil?
     $foobar.render
   end
@@ -261,7 +257,6 @@ def on_key_down key
     puts key
   end
 end
-
 
 # TODO add coord to field
 def on_mouse_down button, x, y
@@ -319,21 +314,17 @@ class GLFrameWork
       :colors_out => 
         ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end)
 
-    #@m.extend(Rotating)
-
-    # TODO kill bla
+    # TODO rename bla-variable
     $bla = []
     $welcome = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(255, 0, 0, 0.8), Settings.fontfile, "TIC TAC TOE")
     $gfxengine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
     $welcome.extend(Pulsing)
-    $welcome.reinit
-    $gfxengine.window_title = WINDOWTITLE
   end
 end
 
 begin
-  puts INFOTEXT
+  puts Settings.infotext
   $gfxengine = GLFrameWork.new
   $gfxengine.prepare
   $gfxengine.run!

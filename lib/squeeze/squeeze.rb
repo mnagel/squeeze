@@ -28,17 +28,41 @@
 # TODO add local/global setting files...
 # TODO reset growing/shrinking when starting new game
 
-require 'v_math'
-# TODO do not depend on gl... some dependencies are messed up here...
 require 'glbase'
+silently do require 'sdl' end
+require 'opengl'
+require 'v_math'
 
 class Settings__ < Settings_
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad
 
   def initialize
-
     super
 
+    # TODO clean up the new settings code...
+    require 'args_parser'
+    switches = []
+    @helpswitch = Switch.new('h', 'print help message',	false, proc { puts "this is oneshot #{THEVERSION}"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
+    switches = [
+      Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
+
+      @helpswitch
+    ]
+
+    fileswitch = proc { |val| puts "dont eat filenames, not even #{val}"};
+    noswitch = proc {|someswitch| log "there is no switch '#{someswitch}'\n\n", LOG_ERROR; @helpswitch.code.call; Process.exit };
+
+    helpswitch = @helpswitch
+
+    $GFX_PATH = ''
+    parse_args(switches, helpswitch, noswitch, fileswitch)
+
+    inf = $GFX_PATH
+    inf = '' if inf.nil?
+
+    @gfx_good = "gfx/squeeze/#{inf}/good/"
+    @gfx_bad = "gfx/squeeze/#{inf}/bad/"
+    @win_title = "squeeze by Michael Nagel"
     @bounce = 0.8
     @show_bounding_boxes = false
     @mousedef = 40
@@ -50,9 +74,6 @@ class Settings__ < Settings_
     icons licensed under Creative Commons BY-NC-SA
 EOT
   end
-
-
-
 end
 
 Settings = Settings__.new
@@ -87,9 +108,9 @@ class Mouse < Entity
 
   def can_spawn_here ball
     if   ball.pos.x < ball.size.x           \
-      or ball.pos.y < ball.size.y           \
-      or ball.pos.x > Settings.winX - ball.size.x \
-      or ball.pos.y > Settings.winY - ball.size.y
+        or ball.pos.y < ball.size.y           \
+        or ball.pos.x > Settings.winX - ball.size.x \
+        or ball.pos.y > Settings.winY - ball.size.y
 
       return false
     end
@@ -107,13 +128,13 @@ class Mouse < Entity
     points = (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (Settings.winX * Settings.winY)
 
     ball.extend(Velocity)
-    ball.reinit2
+    #    ball.reinit2
     ball.extend(Gravity)
     ball.extend(Bounded)
     ball.extend(DoNotIntersect)
     ball.v = self.v.clone.unit
     a= Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (100 * points).to_i.to_s)
-    a.extend(Pulsing); a.reinit
+    a.extend(Pulsing); # a.reinit
     $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
     ball.subs << a
@@ -228,7 +249,7 @@ class SqueezeGameEngine
     if lvl > 0
       go = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
-      go.reinit
+      #      go.reinit
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go
     end
@@ -248,9 +269,9 @@ class SqueezeGameEngine
     sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240, Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
     go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
     go.extend(Pulsing)
-    go.reinit
+    #    go.reinit
     sc.extend(Pulsing)
-    sc.reinit
+    #    sc.reinit
     $engine.messages << go << sc
     $engine.ingame_timer.wipe!(false)
     $engine.external_timer.wipe!(false)
@@ -267,7 +288,7 @@ class SqueezeGameEngine
     end until get_collider(spawning).nil?
 
     spawning.extend(Velocity)
-    spawning.reinit2
+    #    spawning.reinit2
     spawning.extend(Bounded)
     spawning.extend(DoNotIntersect)
     spawning.v.x = Float.rand(-1,1)
@@ -297,16 +318,16 @@ class SqueezeGameEngine
     end
   end
 
-  def beta_method
-    $engine.thing_not_to_intersect.each do |t|
-      t.v += (t.pos - $engine.m.pos).unit * 0.5
-    end
-  end
+  #  def beta_method TODO make a fork for "crush" game and put this code in the mouse_down there...
+  #    $engine.thing_not_to_intersect.each do |t|
+  #      t.v += (t.pos - $engine.m.pos).unit * 0.5 # TODO scale for distance...
+  #    end
+  #  end
 
   def on_mouse_down button, x, y
     case button
     when SDL::Mouse::BUTTON_RIGHT then
-      beta_method
+      #      beta_method
     when SDL::Mouse::BUTTON_LEFT then
       @m.growing = true
     when SDL::Mouse::BUTTON_MIDDLE then
@@ -349,8 +370,9 @@ def sdl_event event
 end
 
 module Velocity
-  def reinit2
-    @v = V.new
+  def self.extend_object(o)
+    super
+    o.instance_eval do @v = V.new end # sneak in the v AUTOMATICALLY...
   end
 
   attr_accessor :v
@@ -369,7 +391,7 @@ module Gravity
     delta = 3
     suckup = -0.5
     if @pos.y  > Settings.winY - @size.y - delta
-      @v.y *= 0.3 if @v.y > suckup and @v.y < 0 # TODO need real solution
+      @v.y *= 0.3 if @v.y > suckup and @v.y < 0 # TODO have another way of letting things rest...
       return
     end
 
@@ -385,7 +407,7 @@ module Bounded
     @v.y *= @@bounce
   end
 
-  def tick dt # TODO cleanup
+  def tick dt # TODO rewrite the "bounded" code
     super
     # TODO objects "hovering" the bottom freak out sometimes
     if @pos.x < @size.x
