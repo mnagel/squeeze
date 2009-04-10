@@ -46,8 +46,7 @@ def profiled(&block)
   end
 end
 
-profiled do
+profiled do # TODO update...
   puts Dir.pwd
-  #require 'lib/gltictactoe'
-  require 'lib/glfiller'
+  require 'lib/gltictactoe'
 end

@@ -25,37 +25,60 @@
 # TODO add rdoc to svn/website
 # TODO prepare for ruby 1.9
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
-# TODO rename configurations
 # TODO use finalizers, private attributes, getters, setters ...
 # TODO add documentation
 
-XWINRES = 750
-YWINRES = 750
-FULLSCREEN = 0
+# base class of the classes that save settings...
+class Settings_
+  # x size of the window
+  attr_accessor :winX
+  # y size of the window
+  attr_accessor :winY
+  # window is fullscreen true/false
+  attr_accessor :fullscreen
+  # title for the window
+  attr_accessor :win_title
+  
+  # after how many frames should the fps be calculated # TODO change this to be based on time, not frames
+  attr_accessor :updaterate
+  # how big freetype should render
+  attr_accessor :freetype_fontsize
+  # resizing freetype hack
+  attr_accessor :freetype_adjustment_hack
+  # path to file with font to use
+  attr_accessor :fontfile
 
-TITLE = "gl base supported application"
-UPDATERATE = 120 # ticks
+  # sets the default settings
+  def initialize
 
-FREETYPE_FONTSIZE = 60
-FONTSIZE_ADJUSTMENT_HACK = 3
+    @winX = 750
+    @winY = 750
+    @fullscreen = 0
 
-def get_fontpath
-  ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
-    "/usr/share/fonts/bitstream-vera/Vera.ttf"
-  ]
+    @win_title = "gl base supported application"
+    @updaterate = 120 # ticks
 
-  if FileTest.exists?(ps[0])
-    return ps[0]
-  elsif FileTest.exists?(ps[1])
-    return ps[1]
-  else
-    throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
+    @freetype_fontsize = 60
+    @freetype_adjustment_hack = 3
+    @fontfile = get_fontpath
+  end
+
+  # returns the path of the font file to use by checking some "well known places"
+  def get_fontpath
+    ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
+      "/usr/share/fonts/bitstream-vera/Vera.ttf"
+    ]
+
+    # TODO iterate through the field properly...
+    if FileTest.exists?(ps[0])
+      return ps[0]
+    elsif FileTest.exists?(ps[1])
+      return ps[1]
+    else
+      throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
+    end
   end
 end
-
-FONTFILE = get_fontpath
-
-#$SHOW_BOUNDING_BOXES = false
 
 require 'v_math'
 V = Math::V2
@@ -152,7 +175,7 @@ class Texture
   end
   
   # TODO : remember to call kill!() at the end -- have it have some kind of finalizer
-  # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die texture nur hier verwendet wird!
+  # TODO im FINALIZER # GL::DeleteTextures($texture) -- falls die Textur nur hier verwendet wird!
   def initialize handle, w, h
     @size = V.new
     @gl_handle, @size.x, @size.y = handle, w, h
@@ -333,7 +356,7 @@ end
 
 class Triangle < OpenGL2D
 
-  @@TAN30 = 0.577;
+  @@TAN30 = Math::tan(30 * Math::PI / 180)
 
   def render
     super do
@@ -364,8 +387,8 @@ class Text < Rect
     @size = V.new
     @size.y, @size.x = 1, 1 # FIXME explain the magic numbers
     
-    @size.x = @texture.size.x * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
-    @size.y = @texture.size.y  * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK) #size
+    @size.x = @texture.size.x * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack) #size
+    @size.y = @texture.size.y  * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack) #size
   end
   
   def initialize x, y, fontsize, color, font, text
@@ -376,7 +399,7 @@ class Text < Rect
     @font = nil
     begin
 
-      @font = SDL::TTF.open(font, FREETYPE_FONTSIZE, index = 0)
+      @font = SDL::TTF.open(font, Settings.freetype_fontsize, index = 0)
       throw "font did not load" if @font.nil?
     rescue => exc
       throw "error opening font: #{font}"
@@ -387,8 +410,8 @@ class Text < Rect
     super x, y, @size.x, @size.y
     @texture = t
     
-    @size.x = @texture.size.x* @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
-    @size.y = @texture.size.y * @fontsize / (FREETYPE_FONTSIZE * FONTSIZE_ADJUSTMENT_HACK)
+    @size.x = @texture.size.x* @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+    @size.y = @texture.size.y * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
   end
 end
 
@@ -446,35 +469,6 @@ class Exception
   end
 end
 
-def init_gl_window(width = XWINRES, height = YWINRES)
-  GL::Viewport(0,0, width, height)
-  # Background color to black
-  GL::ClearColor(0.0, 0.0, 0.0, 0)
-  # Enables clearing of depth buffer
-  GL::ClearDepth(1.0)
-  # Set type of depth test
-  GL::DepthFunc(GL::LEQUAL)
-  # Enable Textures
-  GL::Enable(GL::TEXTURE_2D)
-  # Enable depth testing
-  GL::Enable(GL::DEPTH_TEST)
-  # Enable smooth color shading
-  GL::ShadeModel(GL::SMOOTH)
-  GL::MatrixMode(GL::PROJECTION)
-  GL::LoadIdentity()
-  # Calculate aspect ratio of the window
-  GLU::Perspective(60.0, width / height, 0.1, 100.0)
-  GL::MatrixMode(GL::MODELVIEW)
-end
-
-def define_screen virtual_x = XWINRES, virtual_y = YWINRES
-  GL::MatrixMode(GL::PROJECTION);
-  GL::LoadIdentity();
-  GL::Viewport(0,0,XWINRES,YWINRES);
-  GL::Ortho(0,virtual_x,virtual_y,0,0,128); # TODO make this 1 : ration per default, not x : y
-  GL::MatrixMode(GL::MODELVIEW);
-end
-
 class Timer
   def initialize
     @running = true
@@ -493,10 +487,10 @@ class Timer
     @last_tick = time
     @tick_count += 1
     
-    if @tick_count.modulo(UPDATERATE) == 0
+    if @tick_count.modulo(Settings.updaterate) == 0
       delta2 = (@last_tick - @tick_rate_ref).to_f
       @tick_rate_ref = @last_tick
-      @tick_rate = (UPDATERATE / delta2).to_i
+      @tick_rate = (Settings.updaterate / delta2).to_i
     end
     
     @hooks.delete_if { |item|
@@ -539,19 +533,48 @@ class Timer
   end
 end
 
-class GFXEngine
+class GLFrameWork
+  def init_gl_window(width = Settings.winX, height = Settings.winY)
+    GL::Viewport(0,0, width, height)
+    # Background color to black
+    GL::ClearColor(0.0, 0.0, 0.0, 0)
+    # Enables clearing of depth buffer
+    GL::ClearDepth(1.0)
+    # Set type of depth test
+    GL::DepthFunc(GL::LEQUAL)
+    # Enable Textures
+    GL::Enable(GL::TEXTURE_2D)
+    # Enable depth testing
+    GL::Enable(GL::DEPTH_TEST)
+    # Enable smooth color shading
+    GL::ShadeModel(GL::SMOOTH)
+    GL::MatrixMode(GL::PROJECTION)
+    GL::LoadIdentity()
+    # Calculate aspect ratio of the window
+    GLU::Perspective(60.0, width / height, 0.1, 100.0)
+    GL::MatrixMode(GL::MODELVIEW)
+  end
+
+  def define_screen virtual_x = Settings.winX, virtual_y = Settings.winY
+    GL::MatrixMode(GL::PROJECTION);
+    GL::LoadIdentity();
+    GL::Viewport(0,0,Settings.winX,Settings.winY);
+    GL::Ortho(0,virtual_x,virtual_y,0,0,128); # TODO make this 1 : ration per default, not x : y
+    GL::MatrixMode(GL::MODELVIEW);
+  end
+
   attr_accessor :running, :timer, :fpstext
   
   def initialize
     @timer = Timer.new
     
-    SDL.setVideoMode(XWINRES, YWINRES, 0, (SDL::FULLSCREEN * FULLSCREEN)|SDL::OPENGL|SDL::HWSURFACE)
+    SDL.setVideoMode(Settings.winX, Settings.winY, 0, (SDL::FULLSCREEN * Settings.fullscreen)|SDL::OPENGL|SDL::HWSURFACE)
     
-    init_gl_window(XWINRES, YWINRES)
-    SDL::WM.setCaption(TITLE, "")
+    init_gl_window(Settings.winX, Settings.winY)
+    SDL::WM.setCaption(Settings.win_title, "")
     SDL::Mouse.hide()
 
-    @fpstext = Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "FPS GO HERE")
+    @fpstext = Text.new(10, 10, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "FPS GO HERE")
     @fpstext.extend(TopLeftPositioning)
   end
 
@@ -571,8 +594,8 @@ class GFXEngine
       @fpstext.tick delta
       @fpstext.set_text "rendering @#{$gfxengine.timer.ticks_per_second}fps"
 
-      update_gfx delta
-      draw_gl_scene
+      update_gfx delta # TODO call engine here (that may call gfx engine)
+      draw_gl_scene # TODO call gfx engine here -- no methods from self.
 
       @fpstext.render
       SDL.GLSwapBuffers

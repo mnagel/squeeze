@@ -38,13 +38,16 @@ class Array
   end
 end
 
-# TODO clean up...
-if a == "filler"
-  $LOAD_PATH << './lib/filler'
-  require "filler"
+# TODO clean up..., have hash with key and proc...
+if a == "squeeze"
+  $LOAD_PATH << './lib/squeeze'
+  require "squeeze"
 elsif a == "tictactoe"
   $LOAD_PATH << './lib/tictactoe'
   require "gltictactoe"
+elsif a == "crush"
+  $LOAD_PATH << './lib/crush'
+  require "crush"
 else
   throw "unknown command... #{ARGV.join()}"
 end

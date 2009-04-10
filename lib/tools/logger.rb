@@ -46,7 +46,6 @@ class LoggerClass
   def initialize
     @thresholds = {
       'glbase'    => 0,
-      'filler'    => 0,
       'v_math'    => 0
     }
   end

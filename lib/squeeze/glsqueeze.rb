@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -wKU
 
 =begin
-    filler - a simple game.
+    squeeze - a simple game.
     Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
@@ -41,14 +41,13 @@ parse_args(switches, helpswitch, noswitch, fileswitch)
 inf = $GFX_PATH
 inf = '' if inf.nil?
 
-GOODGFX = "gfx/filler/#{inf}/good/"
-BADGFX  = "gfx/filler/#{inf}/bad/"
-WINDOWTITLE = "glfiller.rb by Michael Nagel"
+GOODGFX = "gfx/squeeze/#{inf}/good/"
+BADGFX  = "gfx/squeeze/#{inf}/bad/"
+WINDOWTITLE = "squeeze by Michael Nagel"
 
 silently do require 'sdl' end
 require 'opengl'
 require 'glbase'
-require 'filler'
 
 require 'v_math'
 
@@ -70,6 +69,7 @@ def draw_gl_scene
   $engine.messages.each { |message| message.render }
 end
 
+# TODO appropriate name
 class Circle < Square
   def initialize(x, y, size, text=nil)
     super x, y, size
@@ -80,7 +80,7 @@ class Circle < Square
   end
 end
 
-class GFXEngine
+class GLFrameWork
   # TODO this updates the model, put to backend...
   def update_gfx dt
     $engine.update dt
@@ -94,7 +94,7 @@ class GFXEngine
 
   def prepare
     $engine.messages = []
-    $engine.scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), FONTFILE, "SCORE GO HERE")
+    $engine.scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
     $engine.scoretext.extend(TopLeftPositioning)
 
     $tex = []

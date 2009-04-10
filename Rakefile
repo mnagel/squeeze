@@ -32,8 +32,8 @@ task :default => [:test]
 Rake::RDocTask.new do |rd|
   rd.name = :rdoc
   rd.rdoc_dir = "rdoc"
-  rd.main = "lib/tictactoe.rb"
-  rd.title = "documentation for tictactoe"
+  rd.main = "lib/glbase.rb"
+  rd.title = "documentation for glbase"
   rd.rdoc_files.include("lib/**/*.rb")
   rd.options << "--line-numbers" << "--inline-source" << "--diagram" << "--fileboxes" << "--all"
 end

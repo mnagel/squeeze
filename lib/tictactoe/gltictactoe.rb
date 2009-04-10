@@ -38,21 +38,17 @@ WINDOWTITLE = "gltictactoe.rb by Michael Nagel"
 require 'glbase'
 require 'tictactoe'
 
-class Settings_
-  attr_accessor :bounce, :show_bounding_boxes
+class Settings__ < Settings_
+  attr_accessor :show_bounding_boxes
 
   def initialize
+    super
+    
     @show_bounding_boxes = false
   end
 end
 
-Settings = Settings_.new
-
-class Float
-  def self.rand min, max
-    return min + Kernel.rand(0) * (max - min)
-  end
-end
+Settings = Settings__.new
 
 class Mark
   alias_method :original, :initialize 
@@ -78,7 +74,7 @@ class TicTacToeGL < TicTacToe
       item.gfx.pulsing = true
     }
     
-    $foobar = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(0, 255, 0, 0.8), FONTFILE, "PLAYER #{winner} WINS!")
+    $foobar = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(0, 255, 0, 0.8), Settings.fontfile, "PLAYER #{winner} WINS!")
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
@@ -88,7 +84,7 @@ class TicTacToeGL < TicTacToe
   def on_gameover
     return unless check_winner.nil?
     #puts "DRAWCODE"
-    $foobar = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "DRAW")
+    $foobar = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "DRAW")
     $foobar.extend(Pulsing)
     $foobar.reinit
     $welcome.visible = false
@@ -274,8 +270,8 @@ def on_mouse_down button, x, y
     $game = TicTacToeGL.new
     #puts $game.to_s
   when SDL::Mouse::BUTTON_LEFT then
-    fx = (x / (XWINRES/3)).to_i
-    fy = (y / (YWINRES/3)).to_i
+    fx = (x / (Settings.winX/3)).to_i
+    fy = (y / (Settings.winY/3)).to_i
     unless $game.gameover?
       $game.do_move(fx,fy) 
       #puts $game.to_s
@@ -306,7 +302,7 @@ def sdl_event event
   end
 end
 
-class GFXEngine
+class GLFrameWork
   def prepare
     $welcome = nil
     $game = TicTacToeGL.new
@@ -317,7 +313,7 @@ class GFXEngine
     @m = Mouse.new(100, 100, 100, 
       :colors_in => [
         ColorList.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
-        ColorList.new(3) do Color.random(1, 0, 0, 0.7) end, # pq
+        ColorList.new(3) do Color.random(1, 0, 0, 0.7) end, # p1
         ColorList.new(3) do Color.random(0, 0, 1, 0.7) end  # p2
       ],  
       :colors_out => 
@@ -327,7 +323,7 @@ class GFXEngine
 
     # TODO kill bla
     $bla = []
-    $welcome = Text.new(XWINRES/2, YWINRES/2, 120, Color.new(255, 0, 0, 0.8), FONTFILE, "TIC TAC TOE")
+    $welcome = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(255, 0, 0, 0.8), Settings.fontfile, "TIC TAC TOE")
     $gfxengine.timer.call_later(3000) do $welcome.visible = false end
     $bla << $welcome
     $welcome.extend(Pulsing)
@@ -338,7 +334,7 @@ end
 
 begin
   puts INFOTEXT
-  $gfxengine = GFXEngine.new
+  $gfxengine = GLFrameWork.new
   $gfxengine.prepare
   $gfxengine.run!
 rescue => exc

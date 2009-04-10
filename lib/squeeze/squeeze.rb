@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -wKU
 
 =begin
-    filler - a simple game.
+    squeeze - a simple game.
     Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
@@ -24,23 +24,38 @@
 # TODO offer tutorial
 # TODO profile and speed up code
 # TODO highscore + multiple lives
-# TODO game over if spawning out of screen
 # TODO add sound effects
 # TODO add local/global setting files...
+# TODO reset growing/shrinking when starting new game
 
-$LOAD_PATH << './lib'
+require 'v_math'
+# TODO do not depend on gl... some dependencies are messed up here...
+require 'glbase'
 
-INFOTEXT = <<EOT
-    filler - a simple game.
+class Settings__ < Settings_
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext
+
+  def initialize
+
+    super
+
+    @bounce = 0.8
+    @show_bounding_boxes = false
+    @mousedef = 40
+    @infotext  = <<EOT
+    squeeze - a simple game.
     Copyright (C) 2009 by Michael Nagel
 
     icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
     icons licensed under Creative Commons BY-NC-SA
 EOT
+  end
 
-require 'v_math'
-# TODO do not depend on gl... some dependencies are messed up here...
-require 'glbase'
+
+
+end
+
+Settings = Settings__.new
 
 class Mouse < Entity
   include Rotating
@@ -53,15 +68,15 @@ class Mouse < Entity
     @gcolors = @colors = ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end
     @rcolors = ColorList.new(3) do Color.random(0.8, 0, 0, 0.7) end
 
-    @green = Triangle.new(0, 0, 1, 1)
+    oe = 1.3
+    @green = Triangle.new(0, 0, oe, oe)
     @green.colors = @colors
-    @pict = Square.new(0, 0, 0.8)
+    @pict = Square.new(0, 0, 1)
 
     a = 1.0
     @pict.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end
 
-    @subs << @green
-    @green.subs  << @pict
+    @subs << @green << @pict
     
     @rotating = true
     @shrinking = @growing = false
@@ -70,6 +85,18 @@ class Mouse < Entity
     @pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
   end
 
+  def can_spawn_here ball
+    if   ball.pos.x < ball.size.x           \
+      or ball.pos.y < ball.size.y           \
+      or ball.pos.x > Settings.winX - ball.size.x \
+      or ball.pos.y > Settings.winY - ball.size.y
+
+      return false
+    end
+
+    return $engine.get_collider(ball).nil?
+
+  end
 
   def spawn_ball
     return unless $engine.engine_running
@@ -77,7 +104,7 @@ class Mouse < Entity
     s =  @size.x
     ball = Circle.new(@pos.x, @pos.y, s)
 
-    points = (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (XWINRES * YWINRES)
+    points = (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (Settings.winX * Settings.winY)
 
     ball.extend(Velocity)
     ball.reinit2
@@ -85,7 +112,7 @@ class Mouse < Entity
     ball.extend(Bounded)
     ball.extend(DoNotIntersect)
     ball.v = self.v.clone.unit
-    a= Text.new(0, 0, 5, Color.new(1,0,0,1), FONTFILE, (100 * points).to_i.to_s)
+    a= Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (100 * points).to_i.to_s)
     a.extend(Pulsing); a.reinit
     $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
@@ -100,7 +127,7 @@ class Mouse < Entity
     $engine.objects << ball
     $engine.thing_not_to_intersect << ball
 
-    if (foo = $engine.get_collider(ball)).nil?
+    if can_spawn_here ball
       $engine.score += points
       $engine.scoreges += points
     else
@@ -137,8 +164,8 @@ class Mouse < Entity
     grow(-dt * x) if @shrinking and $engine.engine_running
     @pict.texture = @gonna_spawn
     
-    coll = $engine.get_collider(self)
-    if coll.nil?
+    coll = can_spawn_here(self) #$engine.get_collider(self)
+    if coll #.nil?
       @green.colors = @gcolors
     else
       @green.colors = @rcolors
@@ -146,14 +173,15 @@ class Mouse < Entity
   end
 end
 
-class FillerGameEngine
+class SqueezeGameEngine
 
-  attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect, :score, :scoreges, :cur_level, :ingame_timer, :external_timer, :engine_running
+  attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect
+  attr_accessor :score, :scoreges, :cur_level, :ingame_timer, :external_timer, :engine_running
 
   def update delta
     @external_timer.tick
     return unless @engine_running
-    real = delta # TODO to make compiler happy
+    real = delta # make netbeans happy
     real = @ingame_timer.tick
 
     $engine.objects.each do |x|
@@ -198,7 +226,7 @@ class FillerGameEngine
   def start_level lvl
     @engine_running = true
     if lvl > 0
-      go = Text.new(XWINRES/2, YWINRES/2, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "level up!")
+      go = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
       go.reinit
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
@@ -217,8 +245,8 @@ class FillerGameEngine
 
   def game_over
     @engine_running = false
-    sc = Text.new(XWINRES/2, YWINRES * 0.6, 240, Color.new(255, 255, 255, 0.8), FONTFILE, "#{($engine.scoreges * 100).to_i}")
-    go = Text.new(XWINRES/2, YWINRES * 0.4, 320, Color.new(0, 255, 0, 0.8), FONTFILE, "game over!")
+    sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240, Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
+    go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
     go.extend(Pulsing)
     go.reinit
     sc.extend(Pulsing)
@@ -232,8 +260,8 @@ class FillerGameEngine
 
   def spawn_enemy
     begin
-      x = Float.rand(Settings.mousedef, XWINRES - Settings.mousedef)
-      y = Float.rand(Settings.mousedef, YWINRES - Settings.mousedef)
+      x = Float.rand(Settings.mousedef, Settings.winX - Settings.mousedef)
+      y = Float.rand(Settings.mousedef, Settings.winY - Settings.mousedef)
 
       spawning = Circle.new(x, y, Settings.mousedef, $ene[rand($ene.length)])
     end until get_collider(spawning).nil?
@@ -269,9 +297,16 @@ class FillerGameEngine
     end
   end
 
+  def beta_method
+    $engine.thing_not_to_intersect.each do |t|
+      t.v += (t.pos - $engine.m.pos).unit * 0.5
+    end
+  end
+
   def on_mouse_down button, x, y
     case button
     when SDL::Mouse::BUTTON_RIGHT then
+      beta_method
     when SDL::Mouse::BUTTON_LEFT then
       @m.growing = true
     when SDL::Mouse::BUTTON_MIDDLE then
@@ -297,18 +332,7 @@ class FillerGameEngine
   end
 end
 
-class Settings_
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef
 
-  def initialize
-
-    @bounce = 0.8
-    @show_bounding_boxes = false
-    @mousedef = 40
-  end
-end
-
-Settings = Settings_.new
 
 def sdl_event event
   if event.is_a?(SDL::Event2::Quit)
@@ -344,7 +368,7 @@ module Gravity
 
     delta = 3
     suckup = -0.5
-    if @pos.y  > YWINRES - @size.y - delta
+    if @pos.y  > Settings.winY - @size.y - delta
       @v.y *= 0.3 if @v.y > suckup and @v.y < 0 # TODO need real solution
       return
     end
@@ -376,14 +400,14 @@ module Bounded
       weaken
     end
 
-    if @pos.x > XWINRES - @size.x
-      @pos.x = (XWINRES - @size.x) 
+    if @pos.x > Settings.winX - @size.x
+      @pos.x = (Settings.winX - @size.x)
       @v.x = -@v.x
       weaken
     end
 
-    if @pos.y > YWINRES - @size.y
-      @pos.y = (YWINRES - @size.y)
+    if @pos.y > Settings.winY - @size.y
+      @pos.y = (Settings.winY - @size.y)
       @v.y = -@v.y
       weaken
     end
@@ -410,10 +434,10 @@ module DoNotIntersect
 end
 
 begin
-  require 'glfiller'
-  puts INFOTEXT
-  $engine = FillerGameEngine.new
-  $gfxengine = GFXEngine.new
+  require 'glsqueeze' # TODO do not have constant here
+  puts Settings.infotext
+  $engine = SqueezeGameEngine.new
+  $gfxengine = GLFrameWork.new
 
   $engine.prepare
   $gfxengine.run!
