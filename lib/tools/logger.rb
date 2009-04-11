@@ -60,11 +60,7 @@ class LoggerClass
   end
   
   def should_show component, messagelevel
-    #puts "putting " + component.to_s + " in the hash"
-    #puts "the hash is " + @thresholds.to_s + " it is"
-    #puts "i am logger " + self.class.to_s
     cutoff = @thresholds[component]
-    #puts 'done that'
     if cutoff.nil?
       cutoff = 0 
       @thresholds[component] = -42
@@ -73,7 +69,7 @@ class LoggerClass
     return messagelevel >= cutoff
   end
   
-  #TODO make more widespread use
+  # TODO make more widespread use
   # if changing indent. plus = +1
   def change_indent plus
     # nothing here
@@ -165,7 +161,7 @@ class GTKTreeLogger < LoggerClass
     @parents = []
   end
   
-  # TODO : force redraws
+  # TODO force redraws
   def log_raw string, component, timestring
     # unindent if necessary
     @parents.pop while (@@indentation_level < @parents.length and @@indentation_level >= 0)
@@ -179,7 +175,7 @@ class GTKTreeLogger < LoggerClass
     item[2] = timestring
     item[3] = false # mark as not marked
     
-    # TODO: seems to not scroll to the right place
+    # TODO seems to not scroll to the right place
     @tvw.scroll_to_cell(item.path, nil, true, 1.0, 0.0)
     @tvw.expand_all
     

@@ -19,8 +19,6 @@ for dir in dirs
   end
 end
 
-#puts list.to_s
-
 args = "glgames.XXX.tar #{list.join(" ")}"
 puts args
 

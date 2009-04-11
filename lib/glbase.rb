@@ -166,7 +166,7 @@ class Texture
     GL.DeleteTextures @gl_handle
   end
   
-  # TODO : remember to call kill!() at the end -- let it have some kind of finalizer
+  # TODO remember to call kill!() at the end -- let it have some kind of finalizer
   def initialize handle, w, h
     @size = V.new
     @gl_handle, @size.x, @size.y = handle, w, h

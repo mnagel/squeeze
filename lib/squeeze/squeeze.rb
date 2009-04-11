@@ -128,13 +128,12 @@ class Mouse < Entity
     points = (2 * ball.size.x *  2* ball.size.x * 3.14 / 4) / (Settings.winX * Settings.winY)
 
     ball.extend(Velocity)
-    #    ball.reinit2
     ball.extend(Gravity)
     ball.extend(Bounded)
     ball.extend(DoNotIntersect)
     ball.v = self.v.clone.unit
     a= Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (100 * points).to_i.to_s)
-    a.extend(Pulsing); # a.reinit
+    a.extend(Pulsing);
     $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
     ball.subs << a
@@ -171,7 +170,7 @@ class Mouse < Entity
   def grow dsize
     dsize *= 0.01
     dsize += 1
-    return if @size.y < 30 and dsize < 0
+    return if @size.y < 30 and dsize < 0 # TODO re-ccheck
     return if @size.y > 1000 and dsize > 0
     dsize = -1 / dsize if dsize < 0
     @size.y *= dsize
@@ -249,7 +248,6 @@ class SqueezeGameEngine
     if lvl > 0
       go = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
-      #      go.reinit
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go
     end
@@ -269,9 +267,7 @@ class SqueezeGameEngine
     sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240, Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
     go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
     go.extend(Pulsing)
-    #    go.reinit
     sc.extend(Pulsing)
-    #    sc.reinit
     $engine.messages << go << sc
     $engine.ingame_timer.wipe!(false)
     $engine.external_timer.wipe!(false)
@@ -288,7 +284,6 @@ class SqueezeGameEngine
     end until get_collider(spawning).nil?
 
     spawning.extend(Velocity)
-    #    spawning.reinit2
     spawning.extend(Bounded)
     spawning.extend(DoNotIntersect)
     spawning.v.x = Float.rand(-1,1)

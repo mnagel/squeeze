@@ -56,7 +56,6 @@ class Mark
       :color_p1 => ColorList.new(3) do Color.random(1, 0, 0) end,  
       :color_p2 => ColorList.new(3) do Color.random(0, 0, 1) end)
     @gfx.extend(Pulsing)
-    #    @gfx.reinit
     @gfx.pulsing = false
   end
 end
@@ -70,21 +69,20 @@ class TicTacToeGL < TicTacToe
       item.gfx.pulsing = true
     }
     
-    $foobar = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(0, 255, 0, 0.8), Settings.fontfile, "PLAYER #{winner} WINS!")
-    $foobar.extend(Pulsing)
-    #    $foobar.reinit
+    $gfxengine.message = Text.new(Settings.winX/2, Settings.winY/2, 120,
+      Color.new(0, 255, 0, 0.8), Settings.fontfile, "PLAYER #{winner} WINS!")
+    $gfxengine.message.extend(Pulsing)
     $welcome.visible = false
-    $gfxengine.timer.call_later(3000) do $foobar = nil end
+    $gfxengine.timer.call_later(3000) do $gfxengine.message = nil end
   end
 
   def on_gameover
     return unless check_winner.nil?
-    #puts "DRAWCODE"
-    $foobar = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "DRAW")
-    $foobar.extend(Pulsing)
-    #    $foobar.reinit
+    $gfxengine.message = Text.new(Settings.winX/2, Settings.winY/2, 320,
+      Color.new(0, 255, 0, 0.8), Settings.fontfile, "DRAW")
+    $gfxengine.message.extend(Pulsing)
     $welcome.visible = false
-    $gfxengine.timer.call_later(3000) do $foobar = nil end
+    $gfxengine.timer.call_later(3000) do $gfxengine.message = nil end
 
   end
       
@@ -138,8 +136,7 @@ class MarkGFX < Triangle
   include Rotating
   
   def initialize x, y, size, mark, color_hash
-    # puts color_hash
-    super x, y, size, size # color_hash[:color_p1]
+    super x, y, size, size
     @c1 = color_hash[:color_p1]
     @c2 = color_hash[:color_p2]
     @mark = mark
@@ -170,7 +167,7 @@ class MarkGFX < Triangle
   end
 end
 
-# TODO : use lines from glbase...
+# TODO use lines from glbase...
 def draw_grid
   GL::LineWidth(2.8)
   a = 0.5
@@ -204,12 +201,11 @@ def update_gfx dt
 
   @m.tick dt
 
-  # TODO rename foobar-variable
-  unless $foobar.nil?
-    $foobar.tick dt
+  unless $gfxengine.message.nil?
+    $gfxengine.message.tick dt
   end
 
-  $bla.each do |x| x.tick dt;  end
+  $welcome.tick dt
 end
 
 def draw_gl_scene
@@ -226,24 +222,21 @@ def draw_gl_scene
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
   @m.render
 
-  # TODO rename foobar-variable
-  unless $foobar.nil?
-    $foobar.render
+  unless $gfxengine.message.nil?
+    $gfxengine.message.render
   end
 
-  $bla.each do |x| x.render end
+  $welcome.render
 end
 
 def on_key_down key
-  #@m.pulsing = (not @m.pulsing)
   case key
   when SDL::Key::ESCAPE then
     $gfxengine.kill!
   when 48 then # Zero
     unless $game.gameover?
       a, b = $game.ki_get_move; 
-      $game.do_move(a,b) 
-      #puts $game.to_s
+      $game.do_move(a,b)
     end
   when 97 then # A
     on_key_down(SDL::Key::SPACE)
@@ -252,30 +245,25 @@ def on_key_down key
     $gfxengine.timer.toggle
   when SDL::Key::SPACE then
     $game = TicTacToeGL.new
-    #puts $game.to_s
   else
     puts key
   end
 end
 
-# TODO add coord to field
 def on_mouse_down button, x, y
   case button
   when SDL::Mouse::BUTTON_RIGHT then
     $game = TicTacToeGL.new
-    #puts $game.to_s
   when SDL::Mouse::BUTTON_LEFT then
-    fx = (x / (Settings.winX/3)).to_i
+    fx = (x / (Settings.winX/3)).to_i # TODO add method to calculate coordinates
     fy = (y / (Settings.winY/3)).to_i
     unless $game.gameover?
       $game.do_move(fx,fy) 
-      #puts $game.to_s
     end
   when SDL::Mouse::BUTTON_MIDDLE then
     unless $game.gameover?
       a, b = $game.ki_get_move; 
       $game.do_move(a,b) 
-      #puts $game.to_s
     end    
   end
 end
@@ -298,10 +286,12 @@ def sdl_event event
 end
 
 class GLFrameWork
+  attr_accessor :message
+
   def prepare
     $welcome = nil
     $game = TicTacToeGL.new
-    $foobar = nil
+    $gfxengine.message = nil
 
     $p1 = Texture.load_file("gfx/a.png")
     $p2 = Texture.load_file("gfx/b.png")
@@ -314,11 +304,9 @@ class GLFrameWork
       :colors_out => 
         ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end)
 
-    # TODO rename bla-variable
-    $bla = []
-    $welcome = Text.new(Settings.winX/2, Settings.winY/2, 120, Color.new(255, 0, 0, 0.8), Settings.fontfile, "TIC TAC TOE")
+    $welcome = Text.new(Settings.winX/2, Settings.winY/2, 120,
+      Color.new(255, 0, 0, 0.8), Settings.fontfile, "TIC TAC TOE")
     $gfxengine.timer.call_later(3000) do $welcome.visible = false end
-    $bla << $welcome
     $welcome.extend(Pulsing)
   end
 end
