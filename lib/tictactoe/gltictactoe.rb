@@ -24,7 +24,7 @@
 require 'glbase'
 require 'tictactoe'
 
-class Settings__ < Settings_
+class Settings__ < SettingsBase
   attr_accessor :show_bounding_boxes, :infotext
 
   def initialize

@@ -21,19 +21,18 @@
 
 =end
 
-# TODO offer tutorial
+# TODO offer tutorial -- howto inflate, howto score, howto level
+# TODO no zero score, superlinear growth in score
+# TODO display current level + game-over level
 # TODO profile and speed up code
 # TODO highscore + multiple lives
-# TODO add sound effects
+# TODO add sound effects http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
 # TODO add local/global setting files...
 # TODO reset growing/shrinking when starting new game
 
 require 'glbase'
-silently do require 'sdl' end
-require 'opengl'
-require 'v_math'
 
-class Settings__ < Settings_
+class Settings__ < SettingsBase
   attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad
 
   def initialize
@@ -42,7 +41,8 @@ class Settings__ < Settings_
     # TODO clean up the new settings code...
     require 'args_parser'
     switches = []
-    @helpswitch = Switch.new('h', 'print help message',	false, proc { puts "this is oneshot #{THEVERSION}"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
+    @helpswitch = Switch.new('h', 'print help message',	false,
+      proc { puts "this is oneshot #{THEVERSION}"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
     switches = [
       Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
 
@@ -264,8 +264,11 @@ class SqueezeGameEngine
 
   def game_over
     @engine_running = false
-    sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240, Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
-    go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
+    # TODO more stats...
+    sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240,
+      Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
+    go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320,
+      Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
     go.extend(Pulsing)
     sc.extend(Pulsing)
     $engine.messages << go << sc
@@ -430,6 +433,20 @@ module Bounded
     end
   end
 end
+
+# TODO read about colission detection and resolution
+# http://box2d.org/manual.html
+# http://dotnetjunkies.com/WebLog/chris.taylor/archive/2006/09/30/148798.aspx
+# http://www.cs.unc.edu/~geom/collide/
+# http://www.ziggyware.com/readarticle.php?article_id=52
+# http://www.realtimerendering.com/
+# http://forums.xna.com/forums/t/17303.aspx
+# http://www.eetsgame.com/PPCD/#_Toc44013734
+# http://www.cs.unc.edu/~geom/index.shtml
+# http://games.fourtwo.se/xna/2d_collision_response_xna/
+# http://en.wikipedia.org/wiki/Collision_detection
+# http://web.comlab.ox.ac.uk/people/Stephen.Cameron/distances/
+# http://chrishecker.com/Rigid_Body_Dynamics
 
 module DoNotIntersect
   @@bounce = Settings.bounce

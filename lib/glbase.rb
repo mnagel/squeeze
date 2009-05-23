@@ -27,9 +27,10 @@
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
 # TODO use finalizers, private attributes, getters, setters ...
 # TODO add documentation
+# TODO customizable screen size
 
 # base class of the classes that save settings...
-class Settings_
+class SettingsBase
   # x size of the window
   attr_accessor :winX
   # y size of the window
@@ -50,7 +51,6 @@ class Settings_
 
   # sets the default settings
   def initialize
-
     @winX = 750
     @winY = 750
     @fullscreen = 0
@@ -80,7 +80,7 @@ class Settings_
   end
 end
 
-require 'v_math'
+require 'v_math';
 V = Math::V2
 
 silently do require 'sdl' end
@@ -159,19 +159,30 @@ class ColorList
   end
 end
 
+class << Math
+  def log2(n)
+    log(n) / log(2)
+  end
+end
+
+def ceil_to_power_of_2 int
+  2**(Math.log2(int).ceil)
+end
+
 class Texture
-  attr_accessor :gl_handle, :size #:w, :h
+  attr_accessor :gl_handle, :size, :content_rect # content rect: 0..1-normalized rect of actual content in texture
   
   def kill!
     GL.DeleteTextures @gl_handle
   end
   
   # TODO remember to call kill!() at the end -- let it have some kind of finalizer
-  def initialize handle, w, h
+  def initialize handle, w, h, wmax = 1.0, hmax = 1.0
     @size = V.new
     @gl_handle, @size.x, @size.y = handle, w, h
+    @content_rect = V.new(wmax,hmax)
   end
-  
+
   def self.from_sdl_surface surf, swapcolors = false
     my_gl_handle = GL.GenTextures(1).first;
     
@@ -180,15 +191,35 @@ class Texture
     STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
     
     GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
+    #    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
+    #    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
   
     val = swapcolors ? GL::BGRA : GL::RGBA
-    GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, surf.w, surf.h, 0, 
-      val, GL::UNSIGNED_BYTE, surf.pixels)
-    
-    my_w, my_h = surf.w, surf.h
-    return self.new(my_gl_handle, my_w, my_h)
+    myw = ceil_to_power_of_2(surf.w)
+    myh = ceil_to_power_of_2(surf.h)
+
+    # wont work this way...
+    # surf2 = SDL::Surface.new(SDL::SRCALPHA, myw, myh, surf)
+    # SDL.blitSurface2(surf,[0,0,surf.w,surf.h],surf2,[(surf2.w-surf.w)/2,(surf2.h-surf.h)/2])
+    # surf.saveBMP("dumps/#{Float.rand(0, 1)}")
+    surf2 = surf.copyRect(0,0,myw,myh)
+
+    begin
+      GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, myw, myh, 0,
+        val, GL::UNSIGNED_BYTE, surf2.pixels)
+
+      GL::TexParameter(GL::TEXTURE_2D,GL::TEXTURE_MIN_FILTER,GL::NEAREST);
+      GL::TexParameter(GL::TEXTURE_2D,GL::TEXTURE_MAG_FILTER,GL::LINEAR);
+
+    rescue => e
+      STDERR.puts "texture could not be created from SDL surface"
+      STDERR.puts "#{GL.GetError}"
+      e.show
+    end
+
+    # report size and actually used fraction
+    my_w, my_h = surf2.w, surf2.h
+    return self.new(my_gl_handle, my_w, my_h, surf.w/myw.to_f, surf.h/myh.to_f)
   end
   
   def self.load_file filename
@@ -322,12 +353,12 @@ class Rect < OpenGL2D
       #end
       
       GL::Begin(GL_QUADS);
-      GL.Color(@colors.as_a[0].as_a);
-      GL.TexCoord2d(0, 1); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
+      GL.Color(@colors.as_a[0].as_a); # TODO userect eplaination
+      GL.TexCoord2d(0, @texture.content_rect.y); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[1].as_a);
-      GL.TexCoord2d(1, 1); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
+      GL.TexCoord2d(@texture.content_rect.x, @texture.content_rect.y); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[2].as_a);
-      GL.TexCoord2d(1, 0); GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
+      GL.TexCoord2d(@texture.content_rect.x, 0); GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[3].as_a);
       GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
       GL::End();
@@ -415,14 +446,14 @@ module Rotating
 end
 
 module Pulsing
-    def self.extend_object(o)
-        super
-        o.instance_eval do
-    @pulse = 0
-    @pulsing = true
-    @max_h = @size.y
-    @max_w = @size.x
-        end # sneak in the v AUTOMATICALLY...
+  def self.extend_object(o)
+    super
+    o.instance_eval do
+      @pulse = 0
+      @pulsing = true
+      @max_h = @size.y
+      @max_w = @size.x
+    end # sneak in the v AUTOMATICALLY...
   end
     
   def tick dt
