@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" 
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+    <!--
+    TO DO comments go here ...
+    -->
+
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+        <title>gl games: squeeze</title>
+
+        <style type="text/css">
+            body { background-color: #4F7E9E; }
+            * { font-family: sans-serif; }
+
+            pre { font-family: monospace; }
+            ul { margin-left: 1.0em; margin-bottom: 0.1em; }
+
+            h1 { color: #000000; margin-left: 0.1em; margin-top: 0.2em; }
+            h2 { color: #000000; }
+
+            hr { color: #E6DACF; background-color: #E6DACF; height: 0.1em; border: 0; }
+
+            a { color: black; text-decoration: none; font-weight: bold; }
+            a:hover { color: #E6DACF; }
+
+            .pre { font-family: monospace; }
+            .nodeco { text-decoration: none; border: 0 }
+            .hanging { margin-left: 0.5em; margin-top: 0px; }
+            .invisible { color: #4F7E9E; }
+        </style>
+
+        <script type="text/javascript">
+            //<![CDATA[
+
+            function show(what) {
+                if (document.getElementById(what).style.display=='none')
+                    document.getElementById(what).style.display='block';
+                else
+                    document.getElementById(what).style.display='none';
+            }
+
+            //]]>
+        </script>
+    </head>
+    <body>
+
+<table border="0"><tr>
+            <td><img src="squeeze-screenshot.png" width="76" height="78" alt="screenshot"/></td>
+            <td><a href="javascript:show('squeeze')"><h1>glgames: squeeze</h1></a></td>
+</tr></table>
+
+        <div id="squeeze" style="display:block;">
+
+            <p>squeeze - squeeze game<br />
+            Copyright (C) 2009 by Michael Nagel<br /></p>
+
+            <img src="squeeze-screenshot.png" width="760" height="784" alt="screenshot"/>
+
+            <h2>Installation (under ubuntu)</h2>
+            <h3>(requires 8.10 intrepid ibex, or later)</h3>
+            <ol>
+                <li>run in terminal:
+                <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby </pre></li>
+                <li><a href="website/downloads/">click here to download</a>, select latest 'glgames'</li>
+                <li>extract the archive</li>
+
+            </ol>
+
+            <h2>Installation (under fedora)</h2>
+            <ol>
+                <li>run in root terminal:
+                    <br /><pre>yum groupinstall "Development Tools"
+yum install ruby rubygems ruby-devel
+
+yum install SDL-devel SDL_ttf-devel SDL_image-devel freeglut-devel
+gem install rubysdl ruby-opengl
+
+yum install bitstream-vera-fonts</pre>
+                </li>
+                <li><a href="website/downloads/">click here to download</a>, select 'glgames'</li>
+                <li>extract the archive</li>
+
+            </ol>
+
+            <h2>Starting the Game</h2>
+            <ol>
+                <li>open a terminal and change to the folder where you unpacked, probably like this:
+                <br /><pre>cd $HOME/Desktop/glgames*</pre> </li>
+                <li>run in terminal:
+                <br /><pre>pwd; ruby -rubygems ./lib/tools/launcher.rb squeeze</pre></li>
+            </ol>
+
+            <h2>Playing the Game</h2>
+
+            <h3>Target</h3>
+            <ol>
+                <li>Your target in each level is to fill the screen with bubbles.</li>
+                <li>You immediately lose if you spawn a bubble within another bubble.</li>
+            </ol>
+
+            <h3>Hints</h3>
+            <ol>
+                <li>You need to score 50 points in each level to proceed.</li>
+                <li>It is OK to collide while inflating a bubble, you must <strong>spawn</strong> at a valid position, though.</li>
+            </ol>
+
+            <h3>Controls</h3>
+            <ol>
+                <li>click&amp;hold left mouse: inflate a bubble.</li>
+                <li>release left mouse: spawn a bubble.</li>
+            </ol>
+        </div>
+
+        <h1>Feedback</h1>
+        <p>To send feedback on the game <a href="http://nailor.devzero.de/quickmail">click here</a>!</p>
+
+    </body>
+</html>
+

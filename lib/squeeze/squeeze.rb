@@ -33,7 +33,7 @@
 require 'glbase'
 
 class Settings__ < SettingsBase
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :fontsize
 
   def initialize
     super
@@ -59,6 +59,8 @@ class Settings__ < SettingsBase
 
     inf = $GFX_PATH
     inf = '' if inf.nil?
+
+    @fontsize = 150
 
     @gfx_good = "gfx/squeeze/#{inf}/good/"
     @gfx_bad = "gfx/squeeze/#{inf}/bad/"
@@ -132,7 +134,7 @@ class Mouse < Entity
     ball.extend(Bounded)
     ball.extend(DoNotIntersect)
     ball.v = self.v.clone.unit
-    a= Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (100 * points).to_i.to_s)
+    a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (100 * points).to_i.to_s)
     a.extend(Pulsing);
     $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
@@ -246,7 +248,7 @@ class SqueezeGameEngine
   def start_level lvl
     @engine_running = true
     if lvl > 0
-      go = Text.new(Settings.winX/2, Settings.winY/2, 320, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
+      go = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go
@@ -265,9 +267,10 @@ class SqueezeGameEngine
   def game_over
     @engine_running = false
     # TODO more stats...
-    sc = Text.new(Settings.winX/2, Settings.winY * 0.6, 240,
+    gameoversize = Settings.fontsize
+    sc = Text.new(Settings.winX/2, Settings.winY * 0.6, gameoversize,
       Color.new(255, 255, 255, 0.8), Settings.fontfile, "#{($engine.scoreges * 100).to_i}")
-    go = Text.new(Settings.winX/2, Settings.winY * 0.4, 320,
+    go = Text.new(Settings.winX/2, Settings.winY * 0.4, gameoversize,
       Color.new(0, 255, 0, 0.8), Settings.fontfile, "game over!")
     go.extend(Pulsing)
     sc.extend(Pulsing)
