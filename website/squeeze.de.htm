@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" 
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+    <!--
+    TO DO comments go here ...
+    -->
+
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+        <title>gl games: squeeze</title>
+
+        <style type="text/css">
+            body { background-color: #4F7E9E; }
+            * { font-family: sans-serif; }
+
+            pre { font-family: monospace; }
+            ul { margin-left: 1.0em; margin-bottom: 0.1em; }
+
+            h1 { color: #000000; margin-left: 0.1em; margin-top: 0.2em; }
+            h2 { color: #000000; }
+
+            hr { color: #E6DACF; background-color: #E6DACF; height: 0.1em; border: 0; }
+
+            a { color: black; text-decoration: none; font-weight: bold; }
+            a:hover { color: #E6DACF; }
+
+            .pre { font-family: monospace; }
+            .nodeco { text-decoration: none; border: 0 }
+            .hanging { margin-left: 0.5em; margin-top: 0px; }
+            .invisible { color: #4F7E9E; }
+        </style>
+
+        <script type="text/javascript">
+            //<![CDATA[
+
+            function show(what) {
+                if (document.getElementById(what).style.display=='none')
+                    document.getElementById(what).style.display='block';
+                else
+                    document.getElementById(what).style.display='none';
+            }
+
+            //]]>
+        </script>
+    </head>
+    <body>
+
+<table border="0"><tr>
+            <td><img src="squeeze-screenshot.png" width="76" height="78" alt="screenshot"/></td>
+            <td><a href="javascript:show('squeeze')"><h1>glgames: squeeze</h1></a></td>
+</tr></table>
+
+        <div id="squeeze" style="display:block;">
+
+            <p>squeeze - squeeze game<br />
+            Copyright (C) 2009 by Michael Nagel<br /></p>
+
+            <img src="squeeze-screenshot.png" width="760" height="784" alt="screenshot"/>
+
+            <h2>Installation (unter ubuntu)</h2>
+            <h3>(benötigt 8.10 intrepid ibex, oder neuer)</h3>
+            <ol>
+                <li>in der Konsole ausführen:
+                <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby </pre></li>
+                <li><a href="downloads/">hier herunterladen</a>, neuste Version von 'glgames' wählen</li>
+                <li>das Archiv entpacken</li>
+
+            </ol>
+
+            <h2>Installation (unter fedora)</h2>
+            <ol>
+                <li>in einer Root-Konsole ausführen:
+                    <br /><pre>yum groupinstall "Development Tools"
+yum install ruby rubygems ruby-devel
+
+yum install SDL-devel SDL_ttf-devel SDL_image-devel freeglut-devel
+gem install rubysdl ruby-opengl
+
+yum install bitstream-vera-fonts</pre>
+                </li>
+                <li><a href="downloads/">hier herunterladen</a>, neuste Version von 'glgames' wählen</li>
+                <li>das Archiv entpacken</li>
+
+            </ol>
+
+            <h2>Spiel starten</h2>
+            <ol>
+                <li>eine Konsole öffnen und zum Ordner mit dem entpackten Archiv wechseln, wahrscheinlich so:
+                <br /><pre>cd $HOME/Desktop/glgames*</pre> </li>
+                <li>in der Konsole ausführen:
+                <br /><pre>pwd; ruby -rubygems ./lib/tools/launcher.rb squeeze</pre></li>
+            </ol>
+
+            <h2>Spiel spielen</h2>
+
+            <h3>Spielziel</h3>
+            <ol>
+                <li>Das Ziel in jedem Level ist es, den Bildschirm mit Kugeln zu füllen.</li>
+                <li>Das Spiel ist direkt verloren, wenn man eine Kugel innerhalb einer anderen erstellt.</li>
+            </ol>
+
+            <h3>Hinweise</h3>
+            <ol>
+                <li>Es sind 50 Punkte nötig um ins nächste Level zu kommen.</li>
+                <li>Kollisionen während dem Aufpumpen von Kugeln sind OK, beim <strong>Erstellen</strong> muss die Position aber legal sein.</li>
+            </ol>
+
+            <h3>Steuerung</h3>
+            <ol>
+                <li>klicken&amp;halten der linken Maustaste: Kugel aufpumpen.</li>
+                <li>linke Maustaste loslassen: Kugel erstellen.</li>
+            </ol>
+        </div>
+
+        <h1>Feedback</h1>
+        <p>Feedback kann <a href="http://nailor.devzero.de/quickmail">hier</a> mitgeteilt werden!</p>
+
+    </body>
+</html>
+
