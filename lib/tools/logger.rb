@@ -22,6 +22,7 @@
 =end
 
 # TODO create module, and move out only the "log" method
+# TODO set default log levels... error, warn, ...
 
 DEFAULT_FILE = "run.log"
 # how timestamps should be formatted

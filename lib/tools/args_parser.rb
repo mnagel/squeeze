@@ -23,6 +23,7 @@
 
 # TODO port improved switching code back to oneshot
 # TODO support reading from a file, too
+# TODO include example...
 
 class Switch
   attr_accessor :char, :comm, :args, :code

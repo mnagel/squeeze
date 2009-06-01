@@ -29,6 +29,8 @@
 # TODO add documentation
 # TODO customizable screen size
 
+# FIXME works with hardy: sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby1.8
+
 # base class of the classes that save settings...
 class SettingsBase
   # x size of the window
@@ -39,6 +41,8 @@ class SettingsBase
   attr_accessor :fullscreen
   # title for the window
   attr_accessor :win_title
+  # should fps be displayed
+  attr_accessor :show_fps
   
   # after how many frames should the fps be calculated # TODO change this to be based on time, not frames
   attr_accessor :updaterate
@@ -54,6 +58,7 @@ class SettingsBase
     @winX = 750
     @winY = 750
     @fullscreen = 0
+    @show_fps = true
 
     @win_title = "gl base supported application"
     @updaterate = 120 # ticks
@@ -353,7 +358,7 @@ class Rect < OpenGL2D
       #end
       
       GL::Begin(GL_QUADS);
-      GL.Color(@colors.as_a[0].as_a); # TODO userect eplaination
+      GL.Color(@colors.as_a[0].as_a); # TODO explain what content_rect is
       GL.TexCoord2d(0, @texture.content_rect.y); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[1].as_a);
       GL.TexCoord2d(@texture.content_rect.x, @texture.content_rect.y); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
@@ -397,10 +402,12 @@ class Triangle < OpenGL2D
   end
 end
 
+# TODO allow multiline text...
 class Text < Rect
   attr_reader :text
   
   def set_text text
+    text = " " if text.nil? or text.length < 1
     return if (text == @text)
     @text = text
     @texture.kill! unless @texture.nil?
@@ -620,7 +627,7 @@ class GLFrameWork
       update_gfx delta # TODO call engine here (that may call gfx engine)
       draw_gl_scene # TODO call gfx engine here -- no methods from self.
 
-      @fpstext.render
+      @fpstext.render if Settings.show_fps
       SDL.GLSwapBuffers
     end
   end

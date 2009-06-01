@@ -1,0 +1,17 @@
+--- !ruby/object:HighScores 
+entries: 
+- !ruby/object:HighScore 
+  name: "ya\beah"
+  score: 1187
+- !ruby/object:HighScore 
+  name: michi
+  score: 1036
+- !ruby/object:HighScore 
+  name: big michi
+  score: 968
+- !ruby/object:HighScore 
+  name: nlr new scores
+  score: 664
+- !ruby/object:HighScore 
+  name: michael n.
+  score: 388

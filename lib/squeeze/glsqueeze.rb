@@ -37,6 +37,19 @@ def draw_gl_scene
   $engine.m.render
 
   $engine.messages.each { |message| message.render }
+  
+  if $engine.gamemode == GameMode::ENTER_NAME
+    GameMode.enter_name_input.render
+    GameMode.enter_name_headline.render
+  end
+
+    if $engine.gamemode == GameMode::SHOW_SCORES
+    puts "GameMode.hs_text  is nil" if GameMode.show_highscores_texts.nil?
+    
+
+    GameMode.show_highscores_texts.each do |item| item.render end
+  end
+
 end
 
 # TODO rename circle so that is is clear what it really is (square + texture)
@@ -57,14 +70,15 @@ class GLFrameWork
     $engine.messages.each { |message| message.tick dt }
     $engine.m.tick dt
 
-    $engine.scoretext.set_text("score: #{($engine.score * 100).to_i}, total: #{($engine.scoreges * 100).to_i}")
+    $engine.scoretext.set_text("score: #{($engine.scoreges).ceil.to_i} -- level up: #{(($engine.level_up_score-$engine.score)).ceil.to_i}") # TODO 0.5 is evil hack
     $engine.scoretext.tick dt
   end
 
   def prepare
     $engine.messages = []
-    $engine.scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
-    $engine.scoretext.extend(TopLeftPositioning)
+    #$engine.scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
+    $engine.scoretext = Text.new(Settings.winX / 2, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
+    #$engine.scoretext.extend(TopLeftPositioning)
 
     $tex = []
     good = Settings.gfx_good

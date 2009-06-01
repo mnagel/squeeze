@@ -22,6 +22,7 @@
 =end
 
 $LOAD_PATH << './lib/' << './lib/tools/'
+require "logger"
 a = ARGV[0]
 ARGV.shift
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 
-list = []
+# pre-insert startup scripts and docu
+list = ["oneshot", "tictactoe", "index.htm"]
 
 require 'find'
-dirs = ["lib", "gfx"]
-excludes = [".svn", "alt"]
+dirs = ["lib", "gfx", "website"]
+excludes = [".svn", "alt", "crush", "downloads"]
 for dir in dirs
   Find.find(dir) do |path|
     if FileTest.directory?(path)
