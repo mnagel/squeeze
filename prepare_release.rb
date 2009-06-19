@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # pre-insert startup scripts and docu
-list = ["oneshot", "tictactoe", "index.htm"]
+list = ["squeeze", "tictactoe", "index.htm"]
 
 require 'find'
 dirs = ["lib", "gfx", "website"]
@@ -20,7 +20,7 @@ for dir in dirs
   end
 end
 
-args = "glgames.XXX.tar #{list.join(" ")}"
+args = "glgames.version-XXX.tar #{list.join(" ")}"
 puts args
 
 system("tar -cvvf #{args}")
