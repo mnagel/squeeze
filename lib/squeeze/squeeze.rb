@@ -21,25 +21,23 @@
 
 =end
 
-# TODO do proper refactoring of this codebase...
-# TODO allow mouse only controls...
-# TODO libsdl-ruby1.8 is in hardy!!!
-# TODO check if in correct game mode when processing input...
-# TODO save scores in home...
+# TODO release plan: dont enter name always, check multiple subsequent games, update doku, go!
 
-# TODO implement wishlist features listed below
-=begin
- offer ingame tutorial -- howto inflate, howto score, howto level
- superlinear growth in score
- profile and speed up code
- add sound effects http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
- add local/global setting files...
- document startup script options
-=end
+# TODO block multiple messages at one time
+# TODO only enter name when needed...
+# TODO check if multiple subsequent games are possible
+
+# TODO WISHLIST offer ingame tutorial -- howto inflate, howto score, howto level
+# TODO WISHLIST profile and speed up code
+# TODO WISHLIST add sound effects http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
+# TODO WISHLIST add local/global setting files...
+# TODO WISHLIST document startup script options
+# TODO WISHLIST document superlinear and special scoring...
 
 require 'glbase'
 require 'args_parser'
 require 'yaml'
+require 'physics'
 
 # class to keep track of the current mode the game is in
 class GameMode # TODO check against this state all over the place!
@@ -52,6 +50,8 @@ class GameMode # TODO check against this state all over the place!
   # highscore table is displayed
   SHOW_SCORES = 4
 
+  NONE        = 0
+
   class << self
     # headline when entering a name for highscore
     attr_accessor :enter_name_headline
@@ -59,6 +59,16 @@ class GameMode # TODO check against this state all over the place!
     attr_accessor :enter_name_input
     # array of texts for highscores
     attr_accessor :show_highscores_texts
+    # fader
+    attr_accessor :fader
+  end
+
+  def self.set_mode mode
+    $engine.gamemode = mode
+  end
+
+  def self.get_mode
+    $engine.gamemode
   end
 end
 
@@ -79,6 +89,7 @@ class HighScores
   # create new list
   def initialize
     @entries = []
+    puts "init of highscores..."
   end
 
   # get top n entries in order
@@ -87,17 +98,9 @@ class HighScores
     return @entries.slice(0..n-1)
   end
 
-
-  # get a file as single string
-  # TODO put this somewhere better
-  # TODO can fail badly
-  def self.get_file_as_string(filename)
-    data = ''
-    f = File.open(filename, "r")
-    f.each_line do |line|
-      data += line
-    end
-    return data
+  def is_in_best val, n
+    ref = (get n).last.score
+    return val > ref
   end
 
   # enter an entry to the table
@@ -106,9 +109,20 @@ class HighScores
   end
 
   # load table from file
-  # TODO make path a param
-  def self.load
-    return YAML::load(get_file_as_string("my.yaml"))
+  def self.load path
+    if File.exist? path
+      puts "reading highscore from #{path}"
+      return YAML::load(get_file_as_string(path))
+    else
+      puts "creating new highscore"
+      a = HighScores.new
+      puts "hs in method is #{a.to_s}"
+      a.add "nobody", 100
+      a.add "nobody", 500
+      a.add "nobody", 1000
+      puts "hs in method is #{a.to_s}"
+      return a
+    end
   end
 
   # keep only the top n entries
@@ -118,19 +132,21 @@ class HighScores
   end
 
   # save table to file
-  # TODO make path a param
-  def save
+  def save path
     truncate 5
     serialized = self.to_yaml
 
-    file = File.new("my.yaml", "w")
+    file = File.new(path, "w")
     file.write(serialized)
     file.close
   end
 end
 
+# TODO put this somewhere else and delay till startup...
 # TODO dispose of global var
-$hs =  HighScores.load
+HIGHSCOREFILEPATH = "#{ENV['HOME']}/.squeeze.hs.yaml"
+$hs =  HighScores.load HIGHSCOREFILEPATH
+#puts "hs is #{$hs.to_s}"
 
 class Settings__ < SettingsBase
   attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :fontsize
@@ -192,7 +208,7 @@ Settings = Settings__.new
 class Mouse < Entity
   include Rotating
 
-  attr_accessor :v, :gonna_spawn
+  attr_accessor :v, :gonna_spawn, :pict
   
   def initialize x, y, size
     super x, y, size, size
@@ -215,68 +231,6 @@ class Mouse < Entity
     @gonna_spawn = $tex[rand($tex.length)]
 
     @pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
-  end
-
-  def can_spawn_here ball
-    if   ball.pos.x < ball.size.x           \
-        or ball.pos.y < ball.size.y           \
-        or ball.pos.x > Settings.winX - ball.size.x \
-        or ball.pos.y > Settings.winY - ball.size.y
-
-      return false
-    end
-
-    return $engine.get_collider(ball).nil?
-
-  end
-
-  def spawn_ball
-    return unless $engine.engine_running
-    # TODO let things have a mass...
-    s =  @size.x
-    ball = Circle.new(@pos.x, @pos.y, s)
-
-    points = $engine.size_to_score ball.size.x
-
-    ball.extend(Velocity)
-    ball.extend(Gravity)
-    ball.extend(Bounded)
-    ball.extend(DoNotIntersect)
-    ball.v = self.v.clone.unit
-    a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (points).to_i.to_s)
-    a.extend(Pulsing);
-    $engine.external_timer.call_later(1000) do ball.subs = [] end
-    a.r = - ball.r
-    ball.subs << a
-
-    ball.colors = @pict.colors
-    @pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
-
-    @growing = false
-    @size = V.new(Settings.mousedef, Settings.mousedef)
-
-    if can_spawn_here ball
-      $engine.score += points
-      $engine.scoreges += points
-      $engine.objects << ball
-      $engine.thing_not_to_intersect << ball
-
-      $engine.m.gonna_spawn = $tex[rand($tex.length)]
-      if $engine.score >= $engine.level_up_score # 0.5 # TODO wait a second...
-        # $engine.external_timer.call_later(1000) do
-        $engine.bonus_score
-        $engine.start_level($engine.cur_level += 1)
-        # end
-      end
-
-    else
-
-      $engine.messages << ball
-      $engine.game_over
-      ball.subs.clear
-    end
-
-
   end
 
   def shrinking=bool
@@ -304,7 +258,7 @@ class Mouse < Entity
     grow(-dt * x) if @shrinking and $engine.engine_running
     @pict.texture = @gonna_spawn
     
-    coll = can_spawn_here(self)
+    coll = $engine.can_spawn_here(self)
     if coll #.nil?
       @green.colors = @gcolors
     else
@@ -315,19 +269,81 @@ end
 
 class SqueezeGameEngine
 
+    def can_spawn_here ball
+    if   ball.pos.x < ball.size.x           \
+        or ball.pos.y < ball.size.y           \
+        or ball.pos.x > Settings.winX - ball.size.x \
+        or ball.pos.y > Settings.winY - ball.size.y
+
+      return false
+    end
+
+    return $engine.get_collider(ball).nil?
+
+  end
+
+  def spawn_ball mouse
+    return unless $engine.engine_running
+    # TODO let things have a mass...
+    s =  mouse.size.x
+    ball = Circle.new(mouse.pos.x, mouse.pos.y, s)
+
+    points = $engine.size_to_score ball.size.x
+
+    ball.extend(Velocity)
+    ball.extend(Gravity)
+    ball.extend(Bounded)
+    ball.extend(DoNotIntersect)
+    ball.v = mouse.v.clone.unit
+    a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (points).to_i.to_s)
+    a.extend(Pulsing);
+    $engine.external_timer.call_later(1000) do ball.subs = [] end
+    a.r = - ball.r
+    ball.subs << a
+
+    ball.colors = mouse.pict.colors
+    mouse.pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
+
+    mouse.growing = false
+    mouse.size = V.new(Settings.mousedef, Settings.mousedef)
+
+    if can_spawn_here ball
+      $engine.score += points
+      $engine.scoreges += points
+      $engine.objects << ball
+      $engine.thing_not_to_intersect << ball
+
+      $engine.m.gonna_spawn = $tex[rand($tex.length)]
+      if $engine.score >= $engine.level_up_score # 0.5 # TODO wait a second...
+        # $engine.external_timer.call_later(1000) do
+        $engine.bonus_score
+        $engine.start_level($engine.cur_level += 1)
+        # end
+      end
+
+    else
+
+      $engine.messages << ball
+      $engine.game_over
+      ball.subs.clear
+    end
+
+
+  end
+
   attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect
   attr_accessor :score, :scoreges, :cur_level, :ingame_timer, :external_timer, :engine_running
   attr_accessor :level_up_score, :gamemode
 
   def size_to_score radius
     area = Math::PI * radius ** 2
-    puts area
+    #    puts area
     perc = area / (Settings.winX * Settings.winY)
-    puts perc
+    #    puts perc
     resu = (1 + perc) ** 2 - 1
-    puts resu
+    #    puts resu
     retu = [1, (100 * resu).floor].max
-    puts retu
+    #    puts retu
     retu
   end
 
@@ -355,10 +371,14 @@ class SqueezeGameEngine
   def prepare
     GameMode.enter_name_input = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "")
     GameMode.enter_name_headline = Text.new(Settings.winX/2, Settings.winY*0.35, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "enter name")
+
+    GameMode.fader = Rect.new(0, 0, Settings.winX, Settings.winY)
+    GameMode.fader.colors = ColorList.new(4) { |i| Color.new(0, 0, 0, 0.8) }
+
     @ingame_timer = Timer.new
     @external_timer = Timer.new
     @engine_running = true
-    @score = @scoreges = 0
+    @score = @scoreges = 0 # TODO make this classes that ensure int-ness
 
     $gfxengine.prepare # TODO put to end, remove things mouse depends on!
     @m = Mouse.new(100, 100, Settings.mousedef)
@@ -367,7 +387,9 @@ class SqueezeGameEngine
 
     @textbuffer = ""
 
-    @gamemode = GameMode::NORMAL
+
+    #@gamemode = GameMode::NORMAL
+    GameMode.set_mode(GameMode::NORMAL)
 
   end
 
@@ -417,7 +439,7 @@ class SqueezeGameEngine
 
   def game_over
     punish_score
-    # TODO block placing new bubbles
+    GameMode.set_mode(GameMode::CRASHED)
     $engine.ingame_timer.pause
     $engine.external_timer.call_later(3000) do $engine.ingame_timer.resume end
 
@@ -430,7 +452,7 @@ class SqueezeGameEngine
     go.extend(Pulsing)
     sc.extend(Pulsing)
     $engine.messages << go << sc # TODO show "press some key to submit score"
-    $engine.external_timer.call_later(3000) do $engine.messages = [] end
+    $engine.external_timer.call_later(3000) do $engine.messages = []; GameMode.set_mode(GameMode::NORMAL) end
   end
 
   def spawn_enemy
@@ -451,9 +473,9 @@ class SqueezeGameEngine
   end
 
 
-  def on_key_down key
-
+  def on_key_down key, event
     # ANY STATE
+    # TODO require right shift to be pressed to stop accidential invoking
     case key
     when SDL::Key::ESCAPE then
       $gfxengine.kill!
@@ -472,239 +494,171 @@ class SqueezeGameEngine
       #@textmode = (not @textmode)
     end
 
-    if $engine.gamemode == GameMode::NORMAL
+    case GameMode.get_mode
+    when GameMode::NORMAL
       case key
-
       when SDL::Key::RETURN then
-        # game_over # reset game!
+        # TODO make function and use same code as abouve
         $engine.ingame_timer.pause
-        #@textmode = true
         @textbuffer = ""
-        $engine.gamemode = GameMode::ENTER_NAME
-        return # TODO fixme, check if needed at other places, too... ... better no multiple ifs...
-      else
-        puts key
-      end
-
-    end
-
-    if $engine.gamemode == GameMode::CRASHED
-      case key
-      when nil # make compiler happy...
-        return
-
-      end
-
-    end
-
-    if $engine.gamemode == GameMode::ENTER_NAME
-      case key
-      when SDL::Key::RETURN then
-        begin
-
-          puts "writing highscore"
-          puts "#{@scoreges} -- #{@textbuffer}" # TODO write to class and yaml file
-          $hs.add(@textbuffer, @scoreges)
-          $hs.save
-
-          #$engine.messages << a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, "highscores!!!")
-          $engine.gamemode = GameMode::SHOW_SCORES
-          hs = $hs.get(3) # .first # only one right now # TODO show more
-          if hs.nil?
-            puts "panic... got a nil"
-          end
+        GameMode.enter_name_input.set_text(@textbuffer)
+        if $hs.is_in_best($engine.scoreges, 3)
+          GameMode.set_mode(GameMode::ENTER_NAME)
+        else
+          GameMode.set_mode(GameMode::SHOW_SCORES)
+          hs = $hs.get(3)  # TODO dont copy this code here!!! -- original in enter_name
+          puts "panic... got a nil" if hs.nil?
           GameMode.show_highscores_texts = []
+
           3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
               Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
           end
-          puts "GameMode.hs_text was set"
+        end
+      else
+        puts SDL::Key.getKeyName(key)
+      end
 
-          # TODO now allow resetting game!
+    when GameMode::CRASHED
+      case key
+      when SDL::Key::RETURN then
+        # TODO make function and use same code as abouve
+        $engine.ingame_timer.pause
+        @textbuffer = ""
+        GameMode.enter_name_input.set_text(@textbuffer)
+        if $hs.is_in_best($engine.scoreges, 3)
+          GameMode.set_mode(GameMode::ENTER_NAME)
+        else
+          GameMode.set_mode(GameMode::SHOW_SCORES)
+          hs = $hs.get(3) # TODO dont copy this code here!!! -- original in enter_name
+          puts "panic... got a nil" if hs.nil?
+          GameMode.show_highscores_texts = []
+
+          3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
+              Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
+          end
+        end
+      when nil then return # make compiler happy...
+      end
+
+    when GameMode::ENTER_NAME
+      case key
+      when SDL::Key::RETURN then
+        begin
+          $hs.add(@textbuffer, @scoreges) # TODO no global variable
+          $hs.save HIGHSCOREFILEPATH
+
+          #$engine.gamemode = GameMode::SHOW_SCORES
+          GameMode.set_mode(GameMode::SHOW_SCORES)
+          hs = $hs.get(3) 
+          puts "panic... got a nil" if hs.nil?
+          GameMode.show_highscores_texts = []
+
+          3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
+              Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
+          end
+
           return
         rescue => exc
-          puts "foobar"
           exc.show
           return
         end
       else
+        begin
+          input = key.chr
+          if key == SDL::Key::BACKSPACE
+            @textbuffer.chop! # FIXME does not work really
 
-          puts "not enter"
+            GameMode.enter_name_input.set_text(@textbuffer)
+            return
+          end
+          is_ok = /[a-zA-z0-9 ]/.match(input)
 
-        @textbuffer += key.chr
-        GameMode.enter_name_input.set_text(GameMode.enter_name_input.text + key.chr)
+          bla = event.mod
+          bla &= SDL::Key::MOD_SHIFT
+          input.upcase! unless bla == 0
+
+          return unless is_ok
+
+          @textbuffer += input
+          GameMode.enter_name_input.set_text(@textbuffer)
+        rescue => exc
+          exc.show
+        end
+      end
+
+    when GameMode::SHOW_SCORES
+      case key
+      when SDL::Key::RETURN then
+        $engine.messages.clear
+
+        $engine.ingame_timer.resume
+        @scoreges = 0; @cur_level = 0; start_level @cur_level
+        GameMode.set_mode(GameMode::NORMAL)
       end
     end
+  end
 
-
-  if $engine.gamemode == GameMode::SHOW_SCORES
-    case key
-    when SDL::Key::RETURN then
-      $engine.messages.clear
-
-      $engine.ingame_timer.resume
-      @scoreges = 0; @cur_level = 0; start_level @cur_level
-      $engine.gamemode = GameMode::NORMAL
-
+  def on_mouse_down button, x, y
+    case GameMode.get_mode
+    when GameMode::NORMAL
+      case button
+      when SDL::Mouse::BUTTON_RIGHT then
+      when SDL::Mouse::BUTTON_LEFT then
+        @m.growing = true
+      when SDL::Mouse::BUTTON_MIDDLE then
+      end
     end
-
   end
- end
 
-def on_mouse_down button, x, y
-  case button
-  when SDL::Mouse::BUTTON_RIGHT then
-    #      beta_method
-  when SDL::Mouse::BUTTON_LEFT then
-    @m.growing = true
-  when SDL::Mouse::BUTTON_MIDDLE then
+  def on_mouse_up button, x, y
+    case GameMode.get_mode
+    when GameMode::NORMAL
+      case button
+      when SDL::Mouse::BUTTON_RIGHT then
+      when SDL::Mouse::BUTTON_LEFT then
+        $engine.spawn_ball(@m)
+      when SDL::Mouse::BUTTON_MIDDLE then
+      end
+    end
+  end
+
+  def on_mouse_move x, y
+    case GameMode.get_mode
+    when GameMode::NONE
+    else
+      oldx = @m.pos.x
+      oldy = @m.pos.y
+      @m.pos.x = x
+      @m.pos.y = y
+      @m.v.x = (@m.pos.x - oldx)
+      @m.v.y = (@m.pos.y - oldy)
+    end
   end
 end
-
-def on_mouse_up button, x, y
-  case button
-  when SDL::Mouse::BUTTON_RIGHT then
-  when SDL::Mouse::BUTTON_LEFT then
-    @m.spawn_ball
-  when SDL::Mouse::BUTTON_MIDDLE then
-  end
-end
-
-def on_mouse_move x, y
-  oldx = @m.pos.x
-  oldy = @m.pos.y
-  @m.pos.x = x
-  @m.pos.y = y
-  @m.v.x = (@m.pos.x - oldx) #/ 10
-  @m.v.y = (@m.pos.y - oldy) #/ 10
-end
-end
-
-
 
 def sdl_event event
-if event.is_a?(SDL::Event2::Quit)
-  $gfxengine.kill!
-elsif event.is_a?(SDL::Event2::KeyDown)
-  $engine.on_key_down event.sym
-elsif event.is_a?(SDL::Event2::MouseButtonDown)
-  $engine.on_mouse_down event.button, event.x, event.y
-elsif event.is_a?(SDL::Event2::MouseButtonUp)
-  $engine.on_mouse_up event.button, event.x, event.y
-elsif event.is_a?(SDL::Event2::MouseMotion)
-  $engine.on_mouse_move event.x, event.y
-end
-end
-
-module Velocity
-def self.extend_object(o)
-  super
-  o.instance_eval do @v = V.new end # sneak in the v AUTOMATICALLY...
-end
-
-attr_accessor :v
-
-def tick dt
-  super
-  @pos.x += @v.x * dt
-  @pos.y += @v.y * dt
-end
-end
-
-module Gravity
-def tick dt
-  super
-
-  delta = 3
-  suckup = -0.5
-  if @pos.y  > Settings.winY - @size.y - delta
-    @v.y *= 0.3 if @v.y > suckup and @v.y < 0 # TODO have another way of letting things rest...
-    return
+  if event.is_a?(SDL::Event2::Quit)
+    $gfxengine.kill!
+  elsif event.is_a?(SDL::Event2::KeyDown)
+    $engine.on_key_down event.sym, event
+  elsif event.is_a?(SDL::Event2::MouseButtonDown)
+    $engine.on_mouse_down event.button, event.x, event.y
+  elsif event.is_a?(SDL::Event2::MouseButtonUp)
+    $engine.on_mouse_up event.button, event.x, event.y
+  elsif event.is_a?(SDL::Event2::MouseMotion)
+    $engine.on_mouse_move event.x, event.y
   end
-
-  @v.y += dt * 0.01 # axis is downwards # TODO check if this is indepent of screen size
-end
-end
-
-module Bounded
-@@bounce = Settings.bounce
-
-def weaken
-  @v.x *= @@bounce
-  @v.y *= @@bounce
-end
-
-def tick dt # TODO rewrite the "bounded" code
-  super
-  # TODO objects "hovering" the bottom freak out sometimes
-  if @pos.x < @size.x
-    @pos.x = @size.x
-    @v.x = -@v.x
-    weaken
-  end
-
-  if @pos.y < @size.y
-    @pos.y = @size.y
-    @v.y = -@v.y
-    weaken
-  end
-
-  if @pos.x > Settings.winX - @size.x
-    @pos.x = (Settings.winX - @size.x)
-    @v.x = -@v.x
-    weaken
-  end
-
-  if @pos.y > Settings.winY - @size.y
-    @pos.y = (Settings.winY - @size.y)
-    @v.y = -@v.y
-    weaken
-  end
-end
-end
-
-# module DoNotIntersect
-# TODO read about colission detection and resolution
-# http://box2d.org/manual.html
-# http://dotnetjunkies.com/WebLog/chris.taylor/archive/2006/09/30/148798.aspx
-# http://www.cs.unc.edu/~geom/collide/
-# http://www.ziggyware.com/readarticle.php?article_id=52
-# http://www.realtimerendering.com/
-# http://forums.xna.com/forums/t/17303.aspx
-# http://www.eetsgame.com/PPCD/#_Toc44013734
-# http://www.cs.unc.edu/~geom/index.shtml
-# http://games.fourtwo.se/xna/2d_collision_response_xna/
-# http://en.wikipedia.org/wiki/Collision_detection
-# http://web.comlab.ox.ac.uk/people/Stephen.Cameron/distances/
-# http://chrishecker.com/Rigid_Body_Dynamics
-
-module DoNotIntersect
-@@bounce = Settings.bounce
-
-def tick dt
-  old_pos = @pos.clone
-  super dt
-
-  collider = $engine.get_collider(self)
-
-  unless collider.nil?
-    @pos = old_pos # TODO having them not move at all is not correct, either -- prevent them from getting stuck to each other
-    r1, r2 = Math::collide(self.pos, collider.pos, self.v, collider.v, self.size.x ** 2 , collider.size.x ** 2)
-
-    self.v = r1 * @@bounce
-    collider.v = r2 * @@bounce
-  end
-end
 end
 
 begin
-require 'glsqueeze' # TODO do not have constant here
-puts Settings.infotext
-$engine = SqueezeGameEngine.new
-$gfxengine = GLFrameWork.new
+  require 'glsqueeze' # TODO do not have constant here
+  puts Settings.infotext
+  $engine = SqueezeGameEngine.new
+  $gfxengine = GLFrameWork.new
 
-$engine.prepare
-$gfxengine.run!
+  $engine.prepare
+  $gfxengine.run!
 rescue => exc
-STDERR.puts "there was an error: #{exc.message}"
-STDERR.puts exc.backtrace
+  STDERR.puts "there was an error: #{exc.message}"
+  STDERR.puts exc.backtrace
 end

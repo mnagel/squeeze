@@ -22,7 +22,9 @@
 
 =end
 
-# TODO add rdoc to svn/website
+# TODO rename tictactoe netbeans profiles
+# TODO add rdoc to svn/website # create into ignored dir (building deletes svn stuff...)
+# and have script to copy it over to final location
 # TODO prepare for ruby 1.9
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
 # TODO use finalizers, private attributes, getters, setters ...
@@ -92,6 +94,7 @@ silently do require 'sdl' end
 require 'opengl'
 require 'logger'
 
+# TODO check if 0..1 or 0..255 scaled...
 class Color
   def r
     @data[0]
@@ -271,7 +274,7 @@ class Entity
     with_some_matrix do
       if @colors.nil?
         puts "WARNING: @color == nil for #{self}, resetting"
-        @colors = ColorList.new(4) { |i| Color.new(1.0, 0, 1.0, 0.8) }
+        @colors = ColorList.new(4) { |i| Color.new(1.0, 1.0, 1.0, 0.8) }
       end
       translate; scale; rotate;
 

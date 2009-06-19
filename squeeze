@@ -1,10 +1,13 @@
 #! /bin/bash
 
 # set to 1 for fullscreen
+# FULLSCREEN=1
 FULLSCREEN=0
 
 # window resolution
+# WINX=1680
+# WINY=1050
 WINX=800
-WINY=800
+WINY=600
 
 ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY $@

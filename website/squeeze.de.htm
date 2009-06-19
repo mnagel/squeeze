@@ -59,9 +59,10 @@
             <img src="squeeze-screenshot.png" width="760" height="784" alt="screenshot"/>
 
             <h2>Installation (unter ubuntu)</h2>
-            <h3>(benötigt 8.10 intrepid ibex, oder neuer)</h3>
             <ol>
-                <li>in der Konsole ausführen:
+                <li>unter ubuntu 8.04 (hardy) und früher: in der Konsole ausführen:
+                <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby1.8 </pre></li>
+                <li>unter ubuntu 8.10 (intrepid) und später: in der Konsole ausführen:
                 <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby </pre></li>
                 <li><a href="downloads/">hier herunterladen</a>, neuste Version von 'glgames' wählen</li>
                 <li>das Archiv entpacken</li>
@@ -95,12 +96,15 @@ yum install bitstream-vera-fonts</pre>
             <h3>Spielziel</h3>
             <ol>
                 <li>Das Ziel in jedem Level ist es, den Bildschirm mit Kugeln zu füllen.</li>
-                <li>Das Spiel ist direkt verloren, wenn man eine Kugel innerhalb einer anderen erstellt.</li>
+                <li>Kugel innerhalb einer anderen Kugel zu erstellen ist verboten.</li>
             </ol>
 
             <h3>Hinweise</h3>
             <ol>
-                <li>Es sind 50 Punkte nötig um ins nächste Level zu kommen.</li>
+                <li>Es sind 100 Punkte nötig um ins nächste Level zu kommen.</li>
+                <li>Bei einem Crash wird dieses Limit erh&ouml;ht.</li>
+                <li>Gro&szlig;e Kugeln geben mehr Punkte als kleine.</li>
+                <li>ENTER dr&uuml;cken, wenn nichts mehr geht.</li>
                 <li>Kollisionen während dem Aufpumpen von Kugeln sind OK, beim <strong>Erstellen</strong> muss die Position aber legal sein.</li>
             </ol>
 
@@ -108,6 +112,7 @@ yum install bitstream-vera-fonts</pre>
             <ol>
                 <li>klicken&amp;halten der linken Maustaste: Kugel aufpumpen.</li>
                 <li>linke Maustaste loslassen: Kugel erstellen.</li>
+                <li>enter: neues Spiel starten.</li>
             </ol>
         </div>
 

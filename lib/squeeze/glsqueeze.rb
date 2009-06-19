@@ -37,13 +37,18 @@ def draw_gl_scene
   $engine.m.render
 
   $engine.messages.each { |message| message.render }
-  
-  if $engine.gamemode == GameMode::ENTER_NAME
+
+  if GameMode.get_mode != GameMode::NORMAL
+
+      GameMode.fader.render
+  end
+
+  if GameMode.get_mode == GameMode::ENTER_NAME
     GameMode.enter_name_input.render
     GameMode.enter_name_headline.render
   end
 
-    if $engine.gamemode == GameMode::SHOW_SCORES
+    if GameMode.get_mode == GameMode::SHOW_SCORES
     puts "GameMode.hs_text  is nil" if GameMode.show_highscores_texts.nil?
     
 

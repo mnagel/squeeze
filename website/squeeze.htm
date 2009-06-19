@@ -59,9 +59,10 @@
             <img src="squeeze-screenshot.png" width="760" height="784" alt="screenshot"/>
 
             <h2>Installation (under ubuntu)</h2>
-            <h3>(requires 8.10 intrepid ibex, or later)</h3>
             <ol>
-                <li>run in terminal:
+                <li>using ubuntu 8.04 (hardy) or earlier: run in terminal:
+                <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby1.8 </pre></li>
+                <li>using ubuntu 8.10 (intrepid) or later: run in terminal:
                 <br /><pre>sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby </pre></li>
                 <li><a href="downloads/">click here to download</a>, select latest 'glgames'</li>
                 <li>extract the archive</li>
@@ -95,12 +96,15 @@ yum install bitstream-vera-fonts</pre>
             <h3>Target</h3>
             <ol>
                 <li>Your target in each level is to fill the screen with bubbles.</li>
-                <li>You immediately lose if you spawn a bubble within another bubble.</li>
+                <li>Do not spawn a bubble within another bubble.</li>
             </ol>
 
             <h3>Hints</h3>
             <ol>
-                <li>You need to score 50 points in each level to proceed.</li>
+                <li>You need to score 100 points in each level to proceed.</li>
+                <li>If you cause a crash, the limit is raised.</li>
+                <li>Big bubbles score more points than small ones.</li>
+                <li>Press ENTER when you cannot place any more bubbles.</li>
                 <li>It is OK to collide while inflating a bubble, you must <strong>spawn</strong> at a valid position, though.</li>
             </ol>
 
@@ -108,6 +112,7 @@ yum install bitstream-vera-fonts</pre>
             <ol>
                 <li>click&amp;hold left mouse: inflate a bubble.</li>
                 <li>release left mouse: spawn a bubble.</li>
+                <li>enter: restart game.</li>
             </ol>
         </div>
 
