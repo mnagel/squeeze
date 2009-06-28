@@ -26,6 +26,19 @@ require "logger"
 a = ARGV[0]
 ARGV.shift
 
+#http://www.kmc.gr.jp/~ohai/rubysdl_doc.en.html#label-617
+#Others
+#Avoid pthread problem
+#
+#You can possibly avoid Ruby/SDL pthread problem when you put following in your script.
+
+require 'rbconfig'
+
+if RUBY_PLATFORM =~ /linux/
+  trap('INT','EXIT')
+  trap('EXIT','EXIT')
+end
+
 
 
   # get a file as single string

@@ -21,23 +21,30 @@
 
 =end
 
-# TODO release plan: dont enter name always, check multiple subsequent games, update doku, go!
+# TODO beim zweiten Durchlauf manchmal kein Pumpen
+# in den höheren Levels, wo es ja sehr eng wird, scheint mir kein 100%iger
+# Verlass auf die roten und grünen Ecken um den Spielball herum zu sein.
+# Ich habe öfter erlebt, dass es einen Crash gab, obwohl ich mir sicher war,
+# die Ecken waren noch grün. Und dann ist mit den Strafpunkten ja alles verloren.
 
 # TODO block multiple messages at one time
-# TODO only enter name when needed...
-# TODO check if multiple subsequent games are possible
-
 # TODO WISHLIST offer ingame tutorial -- howto inflate, howto score, howto level
 # TODO WISHLIST profile and speed up code
-# TODO WISHLIST add sound effects http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
 # TODO WISHLIST add local/global setting files...
 # TODO WISHLIST document startup script options
 # TODO WISHLIST document superlinear and special scoring...
+# TODO add background picture
+# TODO more sounds -- level up, game over, highscore, ...
+# FIXME submitting scores bug... shown twice sometimes...
 
 require 'glbase'
 require 'args_parser'
 require 'yaml'
 require 'physics'
+
+require 'time'
+require 'date'
+DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 
 # class to keep track of the current mode the game is in
 class GameMode # TODO check against this state all over the place!
@@ -72,9 +79,34 @@ class GameMode # TODO check against this state all over the place!
   end
 end
 
+# TODO sanatize to ints only, make level-up callback, add level management here...
+class Score
+  attr_accessor :score, :scoreges, :cur_level, :level_up_score
+
+  def initialize
+    @scoreges, @score = 0, 0
+  end
+
+  def level_up
+    @score = 0
+  end
+
+  def score_points points
+    @score += points
+    @scoreges += points
+  end
+
+  def to_highscore name
+    res = HighScore.new(name, @scoreges)
+    res.date = Time.now.strftime(DATEFORMAT)
+    res.comment = "comment: score = #{@score}; level = #{@cur_level}"
+    return res
+  end
+end
+
 # a simple record of a highscore
 class HighScore
-  attr_accessor :name, :score
+  attr_accessor :name, :score, :date, :comment
 
   def initialize name, score
     @name, @score = name, score
@@ -94,7 +126,7 @@ class HighScores
 
   # get top n entries in order
   def get n
-    @entries.sort! { |a,b| a.score <=> b.score }.reverse!
+    @entries.sort! { |a,b| a.score <=> b.score }.reverse! # order by date as second criterium
     return @entries.slice(0..n-1)
   end
 
@@ -104,8 +136,8 @@ class HighScores
   end
 
   # enter an entry to the table
-  def add name, score
-    @entries << HighScore.new(name, score)
+  def add name, score_object
+    @entries << score_object.to_highscore(name)
   end
 
   # load table from file
@@ -308,16 +340,19 @@ class SqueezeGameEngine
     mouse.size = V.new(Settings.mousedef, Settings.mousedef)
 
     if can_spawn_here ball
-      $engine.score += points
-      $engine.scoreges += points
+      SDL::Mixer.play_channel(1, $sound, 0)
+      # TODO put sound code elsewhere.
+      # investigate http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
+      $engine.score_object.score_points points
       $engine.objects << ball
       $engine.thing_not_to_intersect << ball
 
       $engine.m.gonna_spawn = $tex[rand($tex.length)]
-      if $engine.score >= $engine.level_up_score # 0.5 # TODO wait a second...
+#      # TODO wait a second...
+       if $engine.score_object.score >= $engine.score_object.level_up_score
         # $engine.external_timer.call_later(1000) do
         $engine.bonus_score
-        $engine.start_level($engine.cur_level += 1)
+        $engine.start_level($engine.score_object.cur_level += 1)
         # end
       end
 
@@ -332,8 +367,8 @@ class SqueezeGameEngine
   end
 
   attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect
-  attr_accessor :score, :scoreges, :cur_level, :ingame_timer, :external_timer, :engine_running
-  attr_accessor :level_up_score, :gamemode
+  attr_accessor :score_object, :ingame_timer, :external_timer, :engine_running
+  attr_accessor :gamemode
 
   def size_to_score radius
     area = Math::PI * radius ** 2
@@ -348,13 +383,13 @@ class SqueezeGameEngine
   end
 
   def punish_score
-    @level_up_score += ((@level_up_score - @score) ** 0.35) * 5
-    @level_up_score = @level_up_score.floor
+    @score_object.level_up_score += ((@score_object.level_up_score - @score_object.score) ** 0.35) * 5
+    @score_object.level_up_score = @score_object.level_up_score.floor
   end
 
   def bonus_score
-    bonus = (@score - @level_up_score) ** 1.35
-    @scoreges += bonus
+    bonus = (@score_object.score - @score_object.level_up_score) ** 1.35
+    @score_object.scoreges += bonus
   end
 
   def update delta
@@ -368,7 +403,12 @@ class SqueezeGameEngine
     end
   end
 
-  def prepare
+  # run after real initialization, when all needed resources are available
+  def initialize!
+    magic_buffer_size = 512
+    SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
+    $sound = SDL::Mixer::Wave.load("sfx/create.wav")
+
     GameMode.enter_name_input = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "")
     GameMode.enter_name_headline = Text.new(Settings.winX/2, Settings.winY*0.35, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "enter name")
 
@@ -378,19 +418,18 @@ class SqueezeGameEngine
     @ingame_timer = Timer.new
     @external_timer = Timer.new
     @engine_running = true
-    @score = @scoreges = 0 # TODO make this classes that ensure int-ness
+    @score_object = Score.new
 
     $gfxengine.prepare # TODO put to end, remove things mouse depends on!
     @m = Mouse.new(100, 100, Settings.mousedef)
-    @cur_level = 0
-    start_level @cur_level
-
+    @score_object.cur_level = 0
+    start_level @score_object.cur_level
     @textbuffer = ""
-
-
-    #@gamemode = GameMode::NORMAL
     GameMode.set_mode(GameMode::NORMAL)
+  end
 
+  def prepare
+    initialize!
   end
 
   def collide? obj, obj2 # TODO speedup (the parent method) by sorting them
@@ -418,7 +457,7 @@ class SqueezeGameEngine
   def start_level lvl
     @engine_running = true
     @m.growing = false
-    @level_up_score = 100 # 0.5 # TODO proper value
+    @score_object.level_up_score = 100 # 0.5 # TODO proper value
     if lvl > 0
       go = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
@@ -434,7 +473,7 @@ class SqueezeGameEngine
       spawn_enemy
     end
 
-    @score = 0
+    @score_object.level_up
   end
 
   def game_over
@@ -451,7 +490,7 @@ class SqueezeGameEngine
       Color.new(255, 255, 255, 0.8), Settings.fontfile, "enter => reset")
     go.extend(Pulsing)
     sc.extend(Pulsing)
-    $engine.messages << go << sc # TODO show "press some key to submit score"
+    $engine.messages << go << sc
     $engine.external_timer.call_later(3000) do $engine.messages = []; GameMode.set_mode(GameMode::NORMAL) end
   end
 
@@ -472,6 +511,27 @@ class SqueezeGameEngine
     @thing_not_to_intersect << spawning
   end
 
+  def create_highscore_texts
+    hs = $hs.get(3)
+    puts "panic... got a nil" if hs.nil?
+    GameMode.show_highscores_texts = []
+
+    3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
+        Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
+    end
+  end
+
+  def user_ends_game
+        $engine.ingame_timer.pause
+        @textbuffer = ""
+        GameMode.enter_name_input.set_text(@textbuffer)
+        if $hs.is_in_best($engine.score_object.scoreges, 3)
+          GameMode.set_mode(GameMode::ENTER_NAME)
+        else
+          GameMode.set_mode(GameMode::SHOW_SCORES)
+          create_highscore_texts
+        end
+  end
 
   def on_key_down key, event
     # ANY STATE
@@ -498,22 +558,7 @@ class SqueezeGameEngine
     when GameMode::NORMAL
       case key
       when SDL::Key::RETURN then
-        # TODO make function and use same code as abouve
-        $engine.ingame_timer.pause
-        @textbuffer = ""
-        GameMode.enter_name_input.set_text(@textbuffer)
-        if $hs.is_in_best($engine.scoreges, 3)
-          GameMode.set_mode(GameMode::ENTER_NAME)
-        else
-          GameMode.set_mode(GameMode::SHOW_SCORES)
-          hs = $hs.get(3)  # TODO dont copy this code here!!! -- original in enter_name
-          puts "panic... got a nil" if hs.nil?
-          GameMode.show_highscores_texts = []
-
-          3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-              Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
-          end
-        end
+        user_ends_game
       else
         puts SDL::Key.getKeyName(key)
       end
@@ -521,22 +566,7 @@ class SqueezeGameEngine
     when GameMode::CRASHED
       case key
       when SDL::Key::RETURN then
-        # TODO make function and use same code as abouve
-        $engine.ingame_timer.pause
-        @textbuffer = ""
-        GameMode.enter_name_input.set_text(@textbuffer)
-        if $hs.is_in_best($engine.scoreges, 3)
-          GameMode.set_mode(GameMode::ENTER_NAME)
-        else
-          GameMode.set_mode(GameMode::SHOW_SCORES)
-          hs = $hs.get(3) # TODO dont copy this code here!!! -- original in enter_name
-          puts "panic... got a nil" if hs.nil?
-          GameMode.show_highscores_texts = []
-
-          3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-              Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
-          end
-        end
+        user_ends_game
       when nil then return # make compiler happy...
       end
 
@@ -544,10 +574,9 @@ class SqueezeGameEngine
       case key
       when SDL::Key::RETURN then
         begin
-          $hs.add(@textbuffer, @scoreges) # TODO no global variable
+          $hs.add(@textbuffer, @score_object) # TODO no global variable
           $hs.save HIGHSCOREFILEPATH
 
-          #$engine.gamemode = GameMode::SHOW_SCORES
           GameMode.set_mode(GameMode::SHOW_SCORES)
           hs = $hs.get(3) 
           puts "panic... got a nil" if hs.nil?
@@ -592,7 +621,9 @@ class SqueezeGameEngine
         $engine.messages.clear
 
         $engine.ingame_timer.resume
-        @scoreges = 0; @cur_level = 0; start_level @cur_level
+        @score_object = Score.new
+        @score_object.cur_level = 0
+        start_level @score_object.cur_level
         GameMode.set_mode(GameMode::NORMAL)
       end
     end
@@ -619,6 +650,8 @@ class SqueezeGameEngine
         $engine.spawn_ball(@m)
       when SDL::Mouse::BUTTON_MIDDLE then
       end
+    when GameMode::CRASHED then
+      $engine.external_timer.wipe! true if button == SDL::Mouse::BUTTON_LEFT
     end
   end
 

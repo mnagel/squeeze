@@ -28,10 +28,8 @@
 # TODO prepare for ruby 1.9
 # TODO offer debug mode that annotates objects with status information (like the bounding boxes)
 # TODO use finalizers, private attributes, getters, setters ...
-# TODO add documentation
-# TODO customizable screen size
-
-# FIXME works with hardy: sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby1.8
+# TODO document code
+# TODO customizable screen size, port code from squeeze
 
 # base class of the classes that save settings...
 class SettingsBase
@@ -486,7 +484,7 @@ module TopLeftPositioning
 end
 
 SDL::TTF.init
-SDL.init(SDL::INIT_VIDEO)
+SDL.init(SDL::INIT_VIDEO | SDL::INIT_AUDIO)
 
 
 def with_some_matrix

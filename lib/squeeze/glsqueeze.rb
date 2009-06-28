@@ -75,7 +75,7 @@ class GLFrameWork
     $engine.messages.each { |message| message.tick dt }
     $engine.m.tick dt
 
-    $engine.scoretext.set_text("score: #{($engine.scoreges).ceil.to_i} -- level up: #{(($engine.level_up_score-$engine.score)).ceil.to_i}") # TODO 0.5 is evil hack
+    $engine.scoretext.set_text("score: #{($engine.score_object.scoreges).ceil.to_i} -- level up: #{(($engine.score_object.level_up_score-$engine.score_object.score)).ceil.to_i}") # TODO 0.5 is evil hack
     $engine.scoretext.tick dt
   end
 
