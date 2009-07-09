@@ -488,8 +488,9 @@ SDL.init(SDL::INIT_VIDEO | SDL::INIT_AUDIO)
 
 
 def with_some_matrix
+  return unless block_given?
   GL.PushMatrix();
-  yield if block_given?
+  yield # if block_given?
   GL.PopMatrix();
 end
 

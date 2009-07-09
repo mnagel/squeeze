@@ -48,5 +48,6 @@ end
 
 profiled do # TODO update...
   puts Dir.pwd
-  require 'lib/gltictactoe'
+  ARGV = ["squeeze"]
+  require 'lib/tools/launcher'
 end

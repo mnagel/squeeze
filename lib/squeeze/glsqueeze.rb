@@ -29,6 +29,8 @@ def draw_gl_scene
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
 
+  $back.render
+
   $engine.objects.each do |x|
     x.render
   end
@@ -100,5 +102,12 @@ class GLFrameWork
       text = Texture.load_file(thef)
       $ene << text
     }
+
+    $back2 = Texture.load_file(Settings.gfx_back)
+    $back = Rect.new(0, 0, Settings.winX / 2, Settings.winY / 2)
+    v = 0.3
+    $back.colors = ColorList.new(4) { |i| Color.new(v, v, v, 1.0) }
+    $back.extend TopLeftPositioning
+    $back.texture = $back2
   end
 end

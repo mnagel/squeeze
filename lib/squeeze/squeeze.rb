@@ -36,6 +36,10 @@
 # TODO add background picture
 # TODO more sounds -- level up, game over, highscore, ...
 # FIXME submitting scores bug... shown twice sometimes...
+# TODO version number in game
+# TODO add .desktop file
+# TODO delay inflating for ca. 0.05 seconds
+# TODO michel: unterschiedliche punkte für unterschiedliche farben
 
 require 'glbase'
 require 'args_parser'
@@ -181,7 +185,7 @@ $hs =  HighScores.load HIGHSCOREFILEPATH
 #puts "hs is #{$hs.to_s}"
 
 class Settings__ < SettingsBase
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :fontsize
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :gfx_back, :fontsize
 
   def initialize
     super
@@ -221,6 +225,7 @@ class Settings__ < SettingsBase
 
     @gfx_good = "gfx/squeeze/#{inf}/good/"
     @gfx_bad = "gfx/squeeze/#{inf}/bad/"
+    @gfx_back = "gfx/squeeze/#{inf}/back.png"
     @win_title = "squeeze by Michael Nagel"
     @bounce = 0.8
     @show_bounding_boxes = false
@@ -299,6 +304,25 @@ class Mouse < Entity
   end
 end
 
+class SoundEngine
+  def initialize
+    magic_buffer_size = 512
+    SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
+    @sounds = {}
+    @sounds[:create] = SDL::Mixer::Wave.load("sfx/create.wav")
+    @sounds[:crash] = SDL::Mixer::Wave.load("sfx/crash.wav")
+    @sounds[:levelup] = SDL::Mixer::Wave.load("sfx/levelup.wav")
+    @sounds[:highscore] = SDL::Mixer::Wave.load("sfx/highscore.wav")
+    @sounds[:gameover] = SDL::Mixer::Wave.load("sfx/gameover.wav")
+  end
+
+  def play snd
+    SDL::Mixer.play_channel(1, @sounds[snd], 0)
+  end
+
+
+end
+
 class SqueezeGameEngine
 
     def can_spawn_here ball
@@ -340,7 +364,7 @@ class SqueezeGameEngine
     mouse.size = V.new(Settings.mousedef, Settings.mousedef)
 
     if can_spawn_here ball
-      SDL::Mixer.play_channel(1, $sound, 0)
+      $sfxengine.play :create
       # TODO put sound code elsewhere.
       # investigate http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
       $engine.score_object.score_points points
@@ -357,7 +381,7 @@ class SqueezeGameEngine
       end
 
     else
-
+      $sfxengine.play :crash
       $engine.messages << ball
       $engine.game_over
       ball.subs.clear
@@ -405,9 +429,7 @@ class SqueezeGameEngine
 
   # run after real initialization, when all needed resources are available
   def initialize!
-    magic_buffer_size = 512
-    SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
-    $sound = SDL::Mixer::Wave.load("sfx/create.wav")
+    $sfxengine = SoundEngine.new
 
     GameMode.enter_name_input = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "")
     GameMode.enter_name_headline = Text.new(Settings.winX/2, Settings.winY*0.35, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "enter name")
@@ -459,6 +481,7 @@ class SqueezeGameEngine
     @m.growing = false
     @score_object.level_up_score = 100 # 0.5 # TODO proper value
     if lvl > 0
+      $sfxengine.play :levelup
       go = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
       go.extend(Pulsing)
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
@@ -527,8 +550,10 @@ class SqueezeGameEngine
         GameMode.enter_name_input.set_text(@textbuffer)
         if $hs.is_in_best($engine.score_object.scoreges, 3)
           GameMode.set_mode(GameMode::ENTER_NAME)
+          $sfxengine.play :highscore
         else
           GameMode.set_mode(GameMode::SHOW_SCORES)
+          $sfxengine.play :gameover
           create_highscore_texts
         end
   end
@@ -578,14 +603,7 @@ class SqueezeGameEngine
           $hs.save HIGHSCOREFILEPATH
 
           GameMode.set_mode(GameMode::SHOW_SCORES)
-          hs = $hs.get(3) 
-          puts "panic... got a nil" if hs.nil?
-          GameMode.show_highscores_texts = []
-
-          3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-              Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score} -- #{hs[i].name}")
-          end
-
+          create_highscore_texts
           return
         rescue => exc
           exc.show
