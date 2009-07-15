@@ -305,15 +305,17 @@ class Mouse < Entity
 end
 
 class SoundEngine
+  # TODO fail gracefully
   def initialize
+    pre = "sfx/squeeze/"
     magic_buffer_size = 512
     SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
     @sounds = {}
-    @sounds[:create] = SDL::Mixer::Wave.load("sfx/create.wav")
-    @sounds[:crash] = SDL::Mixer::Wave.load("sfx/crash.wav")
-    @sounds[:levelup] = SDL::Mixer::Wave.load("sfx/levelup.wav")
-    @sounds[:highscore] = SDL::Mixer::Wave.load("sfx/highscore.wav")
-    @sounds[:gameover] = SDL::Mixer::Wave.load("sfx/gameover.wav")
+    @sounds[:create] = SDL::Mixer::Wave.load("#{pre}/create.wav")
+    @sounds[:crash] = SDL::Mixer::Wave.load("#{pre}/crash.wav")
+    @sounds[:levelup] = SDL::Mixer::Wave.load("#{pre}/levelup.wav")
+    @sounds[:highscore] = SDL::Mixer::Wave.load("#{pre}/highscore.wav")
+    @sounds[:gameover] = SDL::Mixer::Wave.load("#{pre}/gameover.wav")
   end
 
   def play snd

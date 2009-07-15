@@ -10,4 +10,8 @@ FULLSCREEN=0
 WINX=800
 WINY=600
 
-ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY $@
+# select alternate graphics
+GFX=""
+#GFX="alt/ng"
+
+ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX $@

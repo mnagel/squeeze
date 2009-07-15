@@ -4,7 +4,7 @@
 list = ["squeeze", "tictactoe", "index.htm"]
 
 require 'find'
-dirs = ["lib", "gfx", "website"]
+dirs = ["lib", "gfx", "sfx", "website"]
 excludes = [".svn", "alt", "crush", "downloads"]
 for dir in dirs
   Find.find(dir) do |path|
