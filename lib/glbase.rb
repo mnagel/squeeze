@@ -30,6 +30,7 @@
 # TODO use finalizers, private attributes, getters, setters ...
 # TODO document code
 # TODO customizable screen size, port code from squeeze
+# TODO render at 60hz/second but update physics more often
 
 # base class of the classes that save settings...
 class SettingsBase
@@ -488,6 +489,8 @@ SDL.init(SDL::INIT_VIDEO | SDL::INIT_AUDIO)
 
 
 def with_some_matrix
+  # test with removing the pushes/pops and manually unrotating, scaling, translating
+  # the matrix showed no faster execution speeds.
   return unless block_given?
   GL.PushMatrix();
   yield # if block_given?

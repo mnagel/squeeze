@@ -40,6 +40,15 @@
 # TODO add .desktop file
 # TODO delay inflating for ca. 0.05 seconds
 # TODO michel: unterschiedliche punkte für unterschiedliche farben
+# TODO quadtree for faster collission detection
+
+#nochmal zu squeeze: ich würde mich freuen, wenn ich immer zwischendurch sehen
+#könnte, wieviele Punkte ich pro Level erzielt habe, ev. würde auch die Angabe
+#des Levels reichen. Ich habe festgestellt, dass ich hohe Punktzahlen nur
+#erreiche, wenn ich möglichst früh sehr viele Punkte mache.
+#Und da erscheine ich niiiiiie bei Highscore und hätte deshalb meinen
+#eigenen Spaß, wenn ich wenigstens sehen könnte, wie weit ich in der
+#Relation Punkte/ Level bin. Kapiert? Dann kannst du das ja mal ändern?!
 
 require 'glbase'
 require 'args_parser'
@@ -153,9 +162,12 @@ class HighScores
       puts "creating new highscore"
       a = HighScores.new
       puts "hs in method is #{a.to_s}"
-      a.add "nobody", 100
-      a.add "nobody", 500
-      a.add "nobody", 1000
+      [99, 499, 999].each do |i|
+        s = Score.new
+        s.score_points(i)
+        s.cur_level = -1
+        a.add "nobody", s
+      end
       puts "hs in method is #{a.to_s}"
       return a
     end
@@ -195,7 +207,7 @@ class Settings__ < SettingsBase
     @winY = 1050 #500
     @fullscreen = 1
 
-    # TODO clean up the new settings code...
+    # TODO clean up the new settings code..., remove onshot references
     switches = []
     @helpswitch = Switch.new('h', 'print help message',	false,
       proc { puts "this is oneshot"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
