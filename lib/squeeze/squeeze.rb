@@ -41,6 +41,7 @@
 # TODO delay inflating for ca. 0.05 seconds
 # TODO michel: unterschiedliche punkte für unterschiedliche farben
 # TODO quadtree for faster collission detection
+# TODO sounds gleichlaut
 
 #nochmal zu squeeze: ich würde mich freuen, wenn ich immer zwischendurch sehen
 #könnte, wieviele Punkte ich pro Level erzielt habe, ev. würde auch die Angabe
@@ -213,6 +214,7 @@ class Settings__ < SettingsBase
       proc { puts "this is oneshot"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
     switches = [
       Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
+      Switch.new('s', 'select path with sfx (relative to sfx folder)', true, proc {|val| $SFX_PATH = val}),
       Switch.new('f', 'enable fullscreen mode (1/0)', true, proc {|val| @fullscreen = val.to_i}),
       Switch.new('x', 'set x resolution', true, proc {|val| @winX = val.to_i}),
       Switch.new('y', 'set y resolution', true, proc {|val| @winY = val.to_i}),
@@ -227,11 +229,23 @@ class Settings__ < SettingsBase
 
     helpswitch = @helpswitch
 
-    $GFX_PATH = ''
+    # TODO dont use global var
+
+        # TODO dont use global var
+    $SFX_PATH = 'default'
+#    parse_args(switches, helpswitch, noswitch, fileswitch)
+
+    inf2 = $SFX_PATH
+    inf2 = 'default' if inf2.nil?
+
+
+    $GFX_PATH = 'default'
     parse_args(switches, helpswitch, noswitch, fileswitch)
 
     inf = $GFX_PATH
-    inf = '' if inf.nil?
+    inf = 'default' if inf.nil?
+
+
 
     @fontsize = 150 * @winX / 750.0  # TODO check scaling
 
@@ -319,7 +333,8 @@ end
 class SoundEngine
   # TODO fail gracefully
   def initialize
-    pre = "sfx/squeeze/"
+    pre = "sfx/squeeze/#{$SFX_PATH}/"
+    puts "sounds from #{pre}"
     magic_buffer_size = 512
     SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
     @sounds = {}
