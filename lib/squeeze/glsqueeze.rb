@@ -23,7 +23,7 @@
 
 def draw_gl_scene
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
-  define_screen 600, 600
+#  define_screen 600, 600
   
   define_screen
   GL::Enable(GL::BLEND)
@@ -36,7 +36,7 @@ def draw_gl_scene
   end
 
   $engine.scoretext.render
-  $engine.m.render
+  $engine.mouse.view.render
 
   $engine.messages.each { |message| message.render }
 
@@ -64,8 +64,8 @@ class Circle < Square
   def initialize(x, y, size, text=nil)
     super x, y, size
     @texture = text
-    @texture = $engine.m.gonna_spawn if @texture.nil?
-    @r = $engine.m.r
+    @texture = $engine.mouse.view.gonna_spawn if @texture.nil?
+    @r = $engine.mouse.view.r
     @colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
   end
 end
@@ -75,7 +75,7 @@ class GLFrameWork
     $engine.update dt # TODO reverse logic here, let the engine call the gfx
     
     $engine.messages.each { |message| message.tick dt }
-    $engine.m.tick dt
+    $engine.mouse.model.tick dt
 
     $engine.scoretext.set_text("score: #{($engine.score_object.scoreges).ceil.to_i} -- level up: #{(($engine.score_object.level_up_score-$engine.score_object.score)).ceil.to_i}") # TODO 0.5 is evil hack
     $engine.scoretext.tick dt
@@ -111,3 +111,13 @@ class GLFrameWork
     $back.texture = $back2
   end
 end
+
+  def create_highscore_texts
+    hs = $hs.get(3)
+    puts "panic... got a nil" if hs.nil?
+    GameMode.show_highscores_texts = []
+
+    3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
+        Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
+    end
+  end

@@ -21,24 +21,15 @@
 
 =end
 
-# TODO beim zweiten Durchlauf manchmal kein Pumpen
-# in den höheren Levels, wo es ja sehr eng wird, scheint mir kein 100%iger
-# Verlass auf die roten und grünen Ecken um den Spielball herum zu sein.
-# Ich habe öfter erlebt, dass es einen Crash gab, obwohl ich mir sicher war,
-# die Ecken waren noch grün. Und dann ist mit den Strafpunkten ja alles verloren.
-
 # TODO block multiple messages at one time
 # TODO WISHLIST offer ingame tutorial -- howto inflate, howto score, howto level
 # TODO WISHLIST profile and speed up code
 # TODO WISHLIST add local/global setting files...
 # TODO WISHLIST document startup script options
 # TODO WISHLIST document superlinear and special scoring...
-# TODO add background picture
-# TODO more sounds -- level up, game over, highscore, ...
 # FIXME submitting scores bug... shown twice sometimes...
 # TODO version number in game
 # TODO add .desktop file
-# TODO delay inflating for ca. 0.05 seconds
 # TODO michel: unterschiedliche punkte für unterschiedliche farben
 # TODO quadtree for faster collission detection
 # TODO sounds gleichlaut
@@ -54,11 +45,16 @@
 require 'glbase'
 require 'args_parser'
 require 'yaml'
-require 'physics'
 
 require 'time'
 require 'date'
 DATEFORMAT = "%Y-%m-%d %H:%M:%S"
+
+require 'physics'
+require 'highscore'
+require 'settings'
+require 'sound'
+require 'mouse'
 
 # class to keep track of the current mode the game is in
 class GameMode # TODO check against this state all over the place!
@@ -93,267 +89,8 @@ class GameMode # TODO check against this state all over the place!
   end
 end
 
-# TODO sanatize to ints only, make level-up callback, add level management here...
-class Score
-  attr_accessor :score, :scoreges, :cur_level, :level_up_score
-
-  def initialize
-    @scoreges, @score = 0, 0
-  end
-
-  def level_up
-    @score = 0
-  end
-
-  def score_points points
-    @score += points
-    @scoreges += points
-  end
-
-  def to_highscore name
-    res = HighScore.new(name, @scoreges)
-    res.date = Time.now.strftime(DATEFORMAT)
-    res.comment = "comment: score = #{@score}; level = #{@cur_level}"
-    return res
-  end
-end
-
-# a simple record of a highscore
-class HighScore
-  attr_accessor :name, :score, :date, :comment
-
-  def initialize name, score
-    @name, @score = name, score
-  end
-end
-
-# list of highscore records building the highscore list
-class HighScores
-  # individual highscore entries
-  attr_accessor :entries
-
-  # create new list
-  def initialize
-    @entries = []
-    puts "init of highscores..."
-  end
-
-  # get top n entries in order
-  def get n
-    @entries.sort! { |a,b| a.score <=> b.score }.reverse! # order by date as second criterium
-    return @entries.slice(0..n-1)
-  end
-
-  def is_in_best val, n
-    ref = (get n).last.score
-    return val > ref
-  end
-
-  # enter an entry to the table
-  def add name, score_object
-    @entries << score_object.to_highscore(name)
-  end
-
-  # load table from file
-  def self.load path
-    if File.exist? path
-      puts "reading highscore from #{path}"
-      return YAML::load(get_file_as_string(path))
-    else
-      puts "creating new highscore"
-      a = HighScores.new
-      puts "hs in method is #{a.to_s}"
-      [99, 499, 999].each do |i|
-        s = Score.new
-        s.score_points(i)
-        s.cur_level = -1
-        a.add "nobody", s
-      end
-      puts "hs in method is #{a.to_s}"
-      return a
-    end
-  end
-
-  # keep only the top n entries
-  def truncate n
-    limit = get(n).last.score
-    @entries.reject! { |item| item.score < limit }
-  end
-
-  # save table to file
-  def save path
-    truncate 5
-    serialized = self.to_yaml
-
-    file = File.new(path, "w")
-    file.write(serialized)
-    file.close
-  end
-end
-
-# TODO put this somewhere else and delay till startup...
-# TODO dispose of global var
-HIGHSCOREFILEPATH = "#{ENV['HOME']}/.squeeze.hs.yaml"
-$hs =  HighScores.load HIGHSCOREFILEPATH
-#puts "hs is #{$hs.to_s}"
-
-class Settings__ < SettingsBase
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :gfx_back, :fontsize
-
-  def initialize
-    super
-
-    @show_fps = false
-    @winX = 1680 #500 # TODO constants for these defaults
-    @winY = 1050 #500
-    @fullscreen = 1
-
-    # TODO clean up the new settings code..., remove onshot references
-    switches = []
-    @helpswitch = Switch.new('h', 'print help message',	false,
-      proc { puts "this is oneshot"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
-    switches = [
-      Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
-      Switch.new('s', 'select path with sfx (relative to sfx folder)', true, proc {|val| $SFX_PATH = val}),
-      Switch.new('f', 'enable fullscreen mode (1/0)', true, proc {|val| @fullscreen = val.to_i}),
-      Switch.new('x', 'set x resolution', true, proc {|val| @winX = val.to_i}),
-      Switch.new('y', 'set y resolution', true, proc {|val| @winY = val.to_i}),
-      @helpswitch
-    ]
-
-    fileswitch = proc { |val| puts "dont eat filenames, not even #{val}"};
-    #LOG_ERROR = 3
-    #noswitch = proc {|someswitch| log "there is no switch '#{someswitch}'\n\n", LOG_ERROR; @helpswitch.code.call; Process.exit };
-    #require "logger" # TODO dont use puts below!
-    noswitch = proc {|someswitch| puts("there is no switch '#{someswitch}'\n\n", 0, nil); @helpswitch.code.call; Process.exit };
-
-    helpswitch = @helpswitch
-
-    # TODO dont use global var
-
-        # TODO dont use global var
-    $SFX_PATH = 'default'
-#    parse_args(switches, helpswitch, noswitch, fileswitch)
-
-    inf2 = $SFX_PATH
-    inf2 = 'default' if inf2.nil?
-
-
-    $GFX_PATH = 'default'
-    parse_args(switches, helpswitch, noswitch, fileswitch)
-
-    inf = $GFX_PATH
-    inf = 'default' if inf.nil?
-
-
-
-    @fontsize = 150 * @winX / 750.0  # TODO check scaling
-
-    @gfx_good = "gfx/squeeze/#{inf}/good/"
-    @gfx_bad = "gfx/squeeze/#{inf}/bad/"
-    @gfx_back = "gfx/squeeze/#{inf}/back.png"
-    @win_title = "squeeze by Michael Nagel"
-    @bounce = 0.8
-    @show_bounding_boxes = false
-    @mousedef = 40 * @winX / 750.0 # 40 # TODO introduce vars for 750 and 40
-    @infotext  = <<EOT
-    squeeze - a simple game.
-    Copyright (C) 2009 by Michael Nagel
-
-    icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
-    icons licensed under Creative Commons BY-NC-SA
-EOT
-  end
-end
-
-Settings = Settings__.new
-
-class Mouse < Entity
-  include Rotating
-
-  attr_accessor :v, :gonna_spawn, :pict
-  
-  def initialize x, y, size
-    super x, y, size, size
-    @v = Math::V2.new(0, 0)
-    @gcolors = @colors = ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end
-    @rcolors = ColorList.new(3) do Color.random(0.8, 0, 0, 0.7) end
-
-    oe = 1.3
-    @green = Triangle.new(0, 0, oe, oe)
-    @green.colors = @colors
-    @pict = Square.new(0, 0, 1)
-
-    a = 1.0
-    @pict.colors = ColorList.new(4) do Color.new(a, a, a, 1.0) end
-
-    @subs << @green << @pict
-    
-    @rotating = true
-    @shrinking = @growing = false
-    @gonna_spawn = $tex[rand($tex.length)]
-
-    @pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
-  end
-
-  def shrinking=bool
-    @shrinking = bool
-  end
-
-  def growing=bool
-    @growing = bool
-  end
-
-  def grow dsize
-    dsize *= 0.01
-    dsize += 1
-    return if @size.y < 30 and dsize < 0 # TODO re-ccheck
-    return if @size.y > 1000 and dsize > 0
-    dsize = -1 / dsize if dsize < 0
-    @size.y *= dsize
-    @size.x *= dsize
-  end
-
-  def tick dt
-    super dt
-    x = 0.1
-    grow(+dt * x) if @growing and $engine.engine_running
-    grow(-dt * x) if @shrinking and $engine.engine_running
-    @pict.texture = @gonna_spawn
-    
-    coll = $engine.can_spawn_here(self)
-    if coll #.nil?
-      @green.colors = @gcolors
-    else
-      @green.colors = @rcolors
-    end
-  end
-end
-
-class SoundEngine
-  # TODO fail gracefully
-  def initialize
-    pre = "sfx/squeeze/#{$SFX_PATH}/"
-    puts "sounds from #{pre}"
-    magic_buffer_size = 512
-    SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
-    @sounds = {}
-    @sounds[:create] = SDL::Mixer::Wave.load("#{pre}/create.wav")
-    @sounds[:crash] = SDL::Mixer::Wave.load("#{pre}/crash.wav")
-    @sounds[:levelup] = SDL::Mixer::Wave.load("#{pre}/levelup.wav")
-    @sounds[:highscore] = SDL::Mixer::Wave.load("#{pre}/highscore.wav")
-    @sounds[:gameover] = SDL::Mixer::Wave.load("#{pre}/gameover.wav")
-  end
-
-  def play snd
-    SDL::Mixer.play_channel(1, @sounds[snd], 0)
-  end
-
-
-end
-
 class SqueezeGameEngine
-
+  
     def can_spawn_here ball
     if   ball.pos.x < ball.size.x           \
         or ball.pos.y < ball.size.y           \
@@ -364,14 +101,12 @@ class SqueezeGameEngine
     end
 
     return $engine.get_collider(ball).nil?
-
   end
 
   def spawn_ball mouse
     return unless $engine.engine_running
     # TODO let things have a mass...
-    s =  mouse.size.x
-    ball = Circle.new(mouse.pos.x, mouse.pos.y, s)
+    ball = Circle.new(mouse.model.pos.x, mouse.model.pos.y, mouse.model.size.x)
 
     points = $engine.size_to_score ball.size.x
 
@@ -379,28 +114,28 @@ class SqueezeGameEngine
     ball.extend(Gravity)
     ball.extend(Bounded)
     ball.extend(DoNotIntersect)
-    ball.v = mouse.v.clone.unit
+    ball.v = mouse.model.v.clone.unit
     a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (points).to_i.to_s)
     a.extend(Pulsing);
     $engine.external_timer.call_later(1000) do ball.subs = [] end
     a.r = - ball.r
     ball.subs << a
 
-    ball.colors = mouse.pict.colors
-    mouse.pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
+    ball.colors = mouse.view.pict.colors
+    mouse.view.pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
 
-    mouse.growing = false
-    mouse.size = V.new(Settings.mousedef, Settings.mousedef)
+    mouse.model.growing = false
+          mouse.model.reset_after_spawn
+    mouse.model.size = V.new(Settings.mousedef, Settings.mousedef)
 
     if can_spawn_here ball
       $sfxengine.play :create
       # TODO put sound code elsewhere.
-      # investigate http://www.urbanhonking.com/ideasfordozens/2009/05/early_8bit_sounds_from__whys_b.html
       $engine.score_object.score_points points
       $engine.objects << ball
       $engine.thing_not_to_intersect << ball
 
-      $engine.m.gonna_spawn = $tex[rand($tex.length)]
+      $engine.mouse.view.gonna_spawn = $tex[rand($tex.length)]
 #      # TODO wait a second...
        if $engine.score_object.score >= $engine.score_object.level_up_score
         # $engine.external_timer.call_later(1000) do
@@ -415,11 +150,9 @@ class SqueezeGameEngine
       $engine.game_over
       ball.subs.clear
     end
-
-
   end
 
-  attr_accessor :m, :messages, :scoretext, :objects, :thing_not_to_intersect
+  attr_accessor :mouse, :messages, :scoretext, :objects, :thing_not_to_intersect
   attr_accessor :score_object, :ingame_timer, :external_timer, :engine_running
   attr_accessor :gamemode
 
@@ -472,7 +205,7 @@ class SqueezeGameEngine
     @score_object = Score.new
 
     $gfxengine.prepare # TODO put to end, remove things mouse depends on!
-    @m = Mouse.new(100, 100, Settings.mousedef)
+    @mouse = Mouse.new(100, 100, Settings.mousedef)
     @score_object.cur_level = 0
     start_level @score_object.cur_level
     @textbuffer = ""
@@ -507,7 +240,7 @@ class SqueezeGameEngine
 
   def start_level lvl
     @engine_running = true
-    @m.growing = false
+    @mouse.model.growing = false
     @score_object.level_up_score = 100 # 0.5 # TODO proper value
     if lvl > 0
       $sfxengine.play :levelup
@@ -563,16 +296,6 @@ class SqueezeGameEngine
     @thing_not_to_intersect << spawning
   end
 
-  def create_highscore_texts
-    hs = $hs.get(3)
-    puts "panic... got a nil" if hs.nil?
-    GameMode.show_highscores_texts = []
-
-    3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-        Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
-    end
-  end
-
   def user_ends_game
         $engine.ingame_timer.pause
         @textbuffer = ""
@@ -588,24 +311,12 @@ class SqueezeGameEngine
   end
 
   def on_key_down key, event
-    # ANY STATE
-    # TODO require right shift to be pressed to stop accidential invoking
     case key
     when SDL::Key::ESCAPE then
       $gfxengine.kill!
     when 48 then # Zero
       Settings.show_bounding_boxes = (not Settings.show_bounding_boxes)
       Settings.show_fps = (not Settings.show_fps)
-    when 97 then # A
-      on_mouse_down(SDL::Mouse::BUTTON_MIDDLE, @m.pos.x, @m.pos.y)
-    when 98 then # B
-      $gfxengine.timer.toggle
-    when 103 then # G
-      $engine.ingame_timer.toggle
-    when 104 then # H
-      $gfxengine.timer.toggle
-    when 116 then
-      #@textmode = (not @textmode)
     end
 
     case GameMode.get_mode
@@ -649,9 +360,9 @@ class SqueezeGameEngine
           end
           is_ok = /[a-zA-z0-9 ]/.match(input)
 
-          bla = event.mod
-          bla &= SDL::Key::MOD_SHIFT
-          input.upcase! unless bla == 0
+          modifier = event.mod
+          modifier &= SDL::Key::MOD_SHIFT
+          input.upcase! unless modifier == 0
 
           return unless is_ok
 
@@ -682,7 +393,7 @@ class SqueezeGameEngine
       case button
       when SDL::Mouse::BUTTON_RIGHT then
       when SDL::Mouse::BUTTON_LEFT then
-        @m.growing = true
+        @mouse.model.growing = true
       when SDL::Mouse::BUTTON_MIDDLE then
       end
     end
@@ -694,7 +405,7 @@ class SqueezeGameEngine
       case button
       when SDL::Mouse::BUTTON_RIGHT then
       when SDL::Mouse::BUTTON_LEFT then
-        $engine.spawn_ball(@m)
+        $engine.spawn_ball(@mouse)
       when SDL::Mouse::BUTTON_MIDDLE then
       end
     when GameMode::CRASHED then
@@ -706,12 +417,12 @@ class SqueezeGameEngine
     case GameMode.get_mode
     when GameMode::NONE
     else
-      oldx = @m.pos.x
-      oldy = @m.pos.y
-      @m.pos.x = x
-      @m.pos.y = y
-      @m.v.x = (@m.pos.x - oldx)
-      @m.v.y = (@m.pos.y - oldy)
+      oldx = @mouse.model.pos.x
+      oldy = @mouse.model.pos.y
+      @mouse.model.pos.x = x
+      @mouse.model.pos.y = y
+      @mouse.model.v.x = (@mouse.model.pos.x - oldx)
+      @mouse.model.v.y = (@mouse.model.pos.y - oldy)
     end
   end
 end

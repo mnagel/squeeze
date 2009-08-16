@@ -317,11 +317,11 @@ class Entity
   end
 
   def translate
-    GL.Translate(@pos.x, @pos.y, @z)
+    GL.Translate(pos.x, pos.y, @z) # TODO check the z
   end
 
   def scale
-    GL.Scale(@size.x, @size.y, 1)
+    GL.Scale(size.x, size.y, 1)
   end
 
   def rotate
