@@ -33,14 +33,22 @@
 # TODO michel: unterschiedliche punkte für unterschiedliche farben
 # TODO quadtree for faster collission detection
 # TODO sounds gleichlaut
+# TODO kugelrotation wird beim erstellen einer kugel nicht uebernommen
+# TODO skript to install all packages squeeze depends on
 
-#nochmal zu squeeze: ich würde mich freuen, wenn ich immer zwischendurch sehen
+# TODO nochmal zu squeeze: ich würde mich freuen, wenn ich immer zwischendurch sehen
 #könnte, wieviele Punkte ich pro Level erzielt habe, ev. würde auch die Angabe
 #des Levels reichen. Ich habe festgestellt, dass ich hohe Punktzahlen nur
 #erreiche, wenn ich möglichst früh sehr viele Punkte mache.
 #Und da erscheine ich niiiiiie bei Highscore und hätte deshalb meinen
 #eigenen Spaß, wenn ich wenigstens sehen könnte, wie weit ich in der
 #Relation Punkte/ Level bin. Kapiert? Dann kannst du das ja mal ändern?!
+
+# TODO document, that pngs need be rgbA
+# TODO correctly rotate spawned bubble
+# TODO document switches (sound...)
+# TODO switch for differnt highscore file
+# TODO check if .svn excluded from releases (ls -lahR)
 
 require 'glbase'
 require 'args_parser'
@@ -103,7 +111,7 @@ class SqueezeGameEngine
     return $engine.get_collider(ball).nil?
   end
 
-  def spawn_ball mouse
+  def spawn_ball mouse # TODO copy rotation from original (and add switch to override (photo mode))
     return unless $engine.engine_running
     # TODO let things have a mass...
     ball = Circle.new(mouse.model.pos.x, mouse.model.pos.y, mouse.model.size.x)

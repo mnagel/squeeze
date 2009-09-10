@@ -57,6 +57,10 @@ module Bounded
   def weaken
     @v.x *= Settings.bounce #@@bounce
     @v.y *= Settings.bounce #@@bounce
+
+    if self.respond_to?(:on_collide, false)
+      self.on_collide("crashed wall")
+    end
   end
 
   def tick dt # TODO rewrite the "bounded" code
@@ -117,6 +121,14 @@ module DoNotIntersect
 
       self.v = r1 * Settings.bounce #@@bounce
       collider.v = r2 * Settings.bounce #@@bounce
+
+      if self.respond_to?(:on_collide, false)
+        self.on_collide(collider)
+      end
+
+      if collider.respond_to?(:on_collide, false)
+        collider.on_collide(self)
+      end
     end
   end
 end

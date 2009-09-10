@@ -22,7 +22,6 @@
 
 =end
 
-# TODO rename tictactoe netbeans profiles
 # TODO add rdoc to svn/website # create into ignored dir (building deletes svn stuff...)
 # and have script to copy it over to final location
 # TODO prepare for ruby 1.9

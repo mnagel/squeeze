@@ -93,7 +93,7 @@ class HighScores
       puts "creating new highscore"
       a = HighScores.new
       puts "hs in method is #{a.to_s}"
-      [99, 499, 999].each do |i|
+      [99, 499, 999].each do |i| # TODO add variables
         s = Score.new
         s.score_points(i)
         s.cur_level = -1
