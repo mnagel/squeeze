@@ -32,7 +32,7 @@ def draw_gl_scene
   $back.render
 
   $engine.objects.each do |x|
-    x.render
+    x.view.render
   end
 
   $engine.scoretext.render
@@ -74,8 +74,15 @@ class GLFrameWork
   def update_gfx dt
     $engine.update dt # TODO reverse logic here, let the engine call the gfx
     
-    $engine.messages.each { |message| message.tick dt }
+    $engine.messages.each { |message|
+#      STDERR.puts "Message is a #{message}"
+#message = message.model if message.instance_variable_defined?(:@model)
+      message.tick dt }
     $engine.mouse.model.tick dt
+
+    $engine.objects.each {|o|
+      o.view.tick dt
+    }
 
     $engine.scoretext.set_text("score: #{($engine.score_object.scoreges).ceil.to_i} -- level up: #{(($engine.score_object.level_up_score-$engine.score_object.score)).ceil.to_i}") # TODO 0.5 is evil hack
     $engine.scoretext.tick dt

@@ -50,7 +50,17 @@
 # TODO switch for differnt highscore file
 # TODO check if .svn excluded from releases (ls -lahR)
 
+# TODO Ränder deutlicher
+# TODO andere Stimme
+# TODO Levelanzahl anzeigen
+
+# TODO ingame menu
+# TODO tutorial screenshots
+#
+# TODO make differnet base level "Model", "View" and "Controller" Classes
+
 require 'glbase'
+require 'glsqueeze'
 require 'args_parser'
 require 'yaml'
 
@@ -63,6 +73,7 @@ require 'highscore'
 require 'settings'
 require 'sound'
 require 'mouse'
+require 'bubble'
 
 # class to keep track of the current mode the game is in
 class GameMode # TODO check against this state all over the place!
@@ -99,44 +110,53 @@ end
 
 class SqueezeGameEngine
   
-    def can_spawn_here ball
-    if   ball.pos.x < ball.size.x           \
-        or ball.pos.y < ball.size.y           \
-        or ball.pos.x > Settings.winX - ball.size.x \
-        or ball.pos.y > Settings.winY - ball.size.y
+    def can_spawn_here mouse_model
+    if     mouse_model.pos.x < mouse_model.size.x                 \
+        or mouse_model.pos.y < mouse_model.size.y                 \
+        or mouse_model.pos.x > Settings.winX - mouse_model.size.x \
+        or mouse_model.pos.y > Settings.winY - mouse_model.size.y
 
       return false
     end
 
-    return $engine.get_collider(ball).nil?
+    return $engine.get_collider_model(mouse_model).nil?
   end
 
   def spawn_ball mouse # TODO copy rotation from original (and add switch to override (photo mode))
     return unless $engine.engine_running
     # TODO let things have a mass...
-    ball = Circle.new(mouse.model.pos.x, mouse.model.pos.y, mouse.model.size.x)
+    ball = Bubble.new(mouse.model.pos.x, mouse.model.pos.y, mouse.model.size.x)
 
-    points = $engine.size_to_score ball.size.x
+    points = $engine.size_to_score ball.model.size.x
 
-    ball.extend(Velocity)
-    ball.extend(Gravity)
-    ball.extend(Bounded)
-    ball.extend(DoNotIntersect)
-    ball.v = mouse.model.v.clone.unit
+#    ball.extend(Velocity)
+#    ball.extend(Gravity)
+#    ball.extend(Bounded)
+#    ball.extend(DoNotIntersect)
+    ball.model.v = mouse.model.v.clone.unit
+    ball.model.r = mouse.model.r
+#    puts "#{mouse.r} mouse r"
+    puts "#{mouse.model.r} mouse model r"
+    puts "#{mouse.view.r} mouse view r"
+#    puts "#{ball.r} ball r"
+    puts "#{ball.model.r} ball model r"
+    puts "#{ball.view.r} ball view r"
+
+
     a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (points).to_i.to_s)
     a.extend(Pulsing);
-    $engine.external_timer.call_later(1000) do ball.subs = [] end
-    a.r = - ball.r
-    ball.subs << a
+    $engine.external_timer.call_later(1000) do ball.view.subs = [] end
+    a.r = - ball.model.r
+    ball.view.subs << a # FIXME added so they show at all. are not removed, do not tick right now...
 
-    ball.colors = mouse.view.pict.colors
+    ball.view.colors = mouse.view.pict.colors
     mouse.view.pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
 
     mouse.model.growing = false
           mouse.model.reset_after_spawn
     mouse.model.size = V.new(Settings.mousedef, Settings.mousedef)
 
-    if can_spawn_here ball
+    if can_spawn_here $engine.mouse.model
       $sfxengine.play :create
       # TODO put sound code elsewhere.
       $engine.score_object.score_points points
@@ -154,9 +174,9 @@ class SqueezeGameEngine
 
     else
       $sfxengine.play :crash
-      $engine.messages << ball
+      $engine.messages << ball.model # TODO evil hack
       $engine.game_over
-      ball.subs.clear
+      ball.model.subs.clear
     end
   end
 
@@ -193,7 +213,12 @@ class SqueezeGameEngine
     real = @ingame_timer.tick
 
     $engine.objects.each do |x|
-      x.tick real
+#      puts "ticking #{x.model}"
+      if x.model.nil?
+        STDERR.puts "updating a #{self}"
+        STDERR.puts "but the model is nil!!!"
+      end
+      x.model.tick real
     end
   end
 
@@ -236,14 +261,17 @@ class SqueezeGameEngine
     return dsq < sizes
   end
 
-  def get_collider who # TODO speedup
+  def get_collider_model of_this_model # TODO speedup
     res = nil
     @thing_not_to_intersect.each { |thing|
-      if thing != who
-        res = thing if collide?(who, thing)
+      if thing.model != of_this_model
+        res = thing if collide?(of_this_model, thing.model)
+        # TODO check this opt.:
+        return res.model unless res.nil?
       end
     }
-    return res
+   # return res
+   return nil
   end
 
   def start_level lvl
@@ -292,14 +320,16 @@ class SqueezeGameEngine
       x = Float.rand(Settings.mousedef, Settings.winX - Settings.mousedef)
       y = Float.rand(Settings.mousedef, Settings.winY - Settings.mousedef)
 
-      spawning = Circle.new(x, y, Settings.mousedef, $ene[rand($ene.length)])
-    end until get_collider(spawning).nil?
+      spawning = EvilBubble.new(x, y, Settings.mousedef) #, $ene[rand($ene.length)])
+      spawning.view.texture = $ene[rand($ene.length)]
+    end until get_collider_model(spawning.model).nil?
 
-    spawning.extend(Velocity)
-    spawning.extend(Bounded)
-    spawning.extend(DoNotIntersect)
-    spawning.v.x = Float.rand(-1,1)
-    spawning.v.y = Float.rand(-1,1)
+    #TODO CHECK
+#    spawning.extend(Velocity)
+#    spawning.extend(Bounded)
+#    spawning.extend(DoNotIntersect)
+    spawning.model.v.x = Float.rand(-1,1)
+    spawning.model.v.y = Float.rand(-1,1)
     $engine.objects << spawning
     @thing_not_to_intersect << spawning
   end
@@ -321,7 +351,10 @@ class SqueezeGameEngine
   def on_key_down key, event
     case key
     when SDL::Key::ESCAPE then
-      $gfxengine.kill!
+      begin
+        $gfxengine.kill!
+        return
+      end
     when 48 then # Zero
       Settings.show_bounding_boxes = (not Settings.show_bounding_boxes)
       Settings.show_fps = (not Settings.show_fps)
@@ -450,7 +483,8 @@ def sdl_event event
 end
 
 begin
-  require 'glsqueeze' # TODO do not have constant here
+  # require 'glsqueeze' # TODO do not have constant here
+  # TODO why was this *here*
   puts Settings.infotext
   $engine = SqueezeGameEngine.new
   $gfxengine = GLFrameWork.new

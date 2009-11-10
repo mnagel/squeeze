@@ -269,6 +269,18 @@ class CrushGameEngine
     @score_object.level_up
   end
 
+  # TODO placement at level start does not terminate in every case
+
+  def remove_bubble bubble
+    $engine.objects.delete bubble
+    @thing_not_to_intersect.delete bubble
+
+    if @thing_not_to_intersect == []
+      start_level(score_object.cur_level += 1)
+    end
+
+  end
+
   def game_over
     punish_score
     GameMode.set_mode(GameMode::CRASHED)

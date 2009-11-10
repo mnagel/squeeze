@@ -71,17 +71,15 @@ class SettingsBase
   # returns the path of the font file to use by checking some "well known places"
   def get_fontpath
     ps = ["/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
-      "/usr/share/fonts/bitstream-vera/Vera.ttf"
+      "/usr/share/fonts/bitstream-vera/Vera.ttf",
+      "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"
     ]
 
-    # TODO iterate through the field properly...
-    if FileTest.exists?(ps[0])
-      return ps[0]
-    elsif FileTest.exists?(ps[1])
-      return ps[1]
-    else
-      throw "cannot find font file at neither #{ps[0]} nor #{ps[1]}"
-    end
+    ps.each { |item|
+      return item if FileTest.exists?(item)
+    }
+
+    throw "cannot find font file. looked at #{ps.join(" ")}"
   end
 end
 
@@ -316,7 +314,7 @@ class Entity
   end
 
   def translate
-    GL.Translate(pos.x, pos.y, @z) # TODO check the z
+    GL.Translate(pos.x, pos.y, z) # TODO check the z
   end
 
   def scale
@@ -324,7 +322,7 @@ class Entity
   end
 
   def rotate
-    GL.Rotate(@r,0,0,1)
+    GL.Rotate(r,0,0,1)
   end
   
   def addsub sub
@@ -446,6 +444,13 @@ class Text < Rect
 end
 
 module Rotating
+    def self.extend_object(o)
+    super
+    o.instance_eval do
+      @rotating = false
+    end # sneak in the rotating AUTOMATICALLY...
+  end
+
   def tick dt
     super; return unless @rotating
     
@@ -621,6 +626,7 @@ class GLFrameWork
     while @running do
       until (event = SDL::Event2.poll).nil?
         sdl_event(event)
+        return if not @running # FIXME something broken here!
       end
       
       delta = @timer.tick

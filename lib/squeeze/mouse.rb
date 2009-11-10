@@ -35,6 +35,9 @@ class MouseModel < Entity
   end
 
   def initialize x, y, size
+    extend Rotating
+    @rotating = true
+
     super x, y, size, size
     @v = Math::V2.new(0, 0)
 
@@ -79,12 +82,13 @@ class MouseModel < Entity
 end
 
 class MouseView < OpenGL2D
-  include Rotating
 
   attr_accessor :v, :gonna_spawn, :pict
 
   def initialize x, y, size
     super x, y, size, size
+    extend(Rotating)
+
     @v = Math::V2.new(0, 0)
     @gcolors = @colors = ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end
     @rcolors = ColorList.new(3) do Color.random(0.8, 0, 0, 0.7) end
@@ -110,19 +114,32 @@ class MouseView < OpenGL2D
     $engine.mouse.model.pos
   end
 
+  def pos=val
+    $engine.mouse.model.pos=val
+  end
+
   def size
     $engine.mouse.model.size
   end
 
-  def r
-   $engine.mouse.model.r
+  def size=val
+    $engine.mouse.model.size=val
   end
+
+  def r
+    $engine.mouse.model.r
+  end
+
+  def r=val
+    $engine.mouse.model.r=val
+  end
+
 
   def tick dt
     super dt
     @pict.texture = @gonna_spawn
 
-    coll = $engine.can_spawn_here(self)
+    coll = $engine.can_spawn_here($engine.mouse.model)
     if coll #.nil?
       @green.colors = @gcolors
     else

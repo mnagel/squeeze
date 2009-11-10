@@ -30,9 +30,24 @@ module Velocity
   attr_accessor :v
 
   def tick dt
-    super
+    begin
+      super
+    rescue => exc
+      STDERR.puts "no super"
+      STDERR.puts "i am a: #{self}"
+      #1/0
+    end
+
+    begin
+
     @pos.x += @v.x * dt
     @pos.y += @v.y * dt
+
+          rescue => exc
+      STDERR.puts "no pos method"
+      STDERR.puts "i am a: #{self}"
+      #1/0
+    end
   end
 end
 
@@ -110,13 +125,20 @@ module DoNotIntersect
 #  @@bounce = Settings.bounce
 
   def tick dt
-    old_pos = @pos.clone
+    old_pos = self.pos.clone
     super dt
 
-    collider = $engine.get_collider(self)
+    collider = $engine.get_collider_model(self)
 
     unless collider.nil?
-      @pos = old_pos # TODO having them not move at all is not correct, either -- prevent them from getting stuck to each other
+#      if @model.nil?
+#        STDERR.puts "my model is nil"
+#        STDERR.puts "i am a #{self}"
+#
+#      end
+
+      self.pos = old_pos # TODO having them not move at all is not correct, either -- prevent them from getting stuck to each other
+
       r1, r2 = Math::collide(self.pos, collider.pos, self.v, collider.v, self.size.x ** 2 , collider.size.x ** 2)
 
       self.v = r1 * Settings.bounce #@@bounce

@@ -93,6 +93,9 @@ class Circle < Square
     v2 *= 10
 
     @health -= v2.to_i
+    if @health < 0
+      $engine.remove_bubble self
+    end
   end
 end
 
