@@ -17,9 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    $Id$
-
 =end
+
+# TODO fix exiting
+# TODO save essence of crush and then delete it
 
 # TODO block multiple messages at one time
 # TODO WISHLIST offer ingame tutorial -- howto inflate, howto score, howto level

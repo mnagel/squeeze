@@ -17,12 +17,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    $Id$
-
 =end
 
 class Settings__ < SettingsBase
   attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :gfx_back, :fontsize
+
+  PROGNAME = "squeeze"
 
   def initialize
     super
@@ -72,16 +72,15 @@ class Settings__ < SettingsBase
 
 
     @fontsize = 150 * @winX / 750.0  # TODO check scaling
-
-    @gfx_good = "gfx/squeeze/#{inf}/good/"
-    @gfx_bad = "gfx/squeeze/#{inf}/bad/"
-    @gfx_back = "gfx/squeeze/#{inf}/back.png"
-    @win_title = "squeeze by Michael Nagel"
+    @gfx_good = "gfx/#{PROGNAME}/#{inf}/good/"
+    @gfx_bad = "gfx/#{PROGNAME}/#{inf}/bad/"
+    @gfx_back = "gfx/#{PROGNAME}/#{inf}/back.png"
+    @win_title = "#{PROGNAME} by Michael Nagel"
     @bounce = 0.8
     @show_bounding_boxes = false
     @mousedef = 40 * @winX / 750.0 # 40 # TODO introduce vars for 750 and 40
     @infotext  = <<EOT
-    squeeze - a simple game.
+    #{PROGNAME} - a simple game.
     Copyright (C) 2009 by Michael Nagel
 
     icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153

@@ -17,8 +17,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    $Id$
-
 =end
 
 # the Matrix class is used to store two dimensional data

@@ -18,8 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    $Id$
-
 =end
 
 # TODO add rdoc to svn/website # create into ignored dir (building deletes svn stuff...)
@@ -626,7 +624,10 @@ class GLFrameWork
     while @running do
       until (event = SDL::Event2.poll).nil?
         sdl_event(event)
-        return if not @running # FIXME something broken here!
+        if not @running # FIXME something broken here!
+#          throw "should no longer run"
+Process.exit!(0) #FIXME ... but makes things work
+        end
       end
       
       delta = @timer.tick
