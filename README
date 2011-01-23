@@ -1,0 +1,32 @@
+TODO:
+
+- squeeze public Design fertigstellen
+
+ubuntuusers-Post
+
+Hallo zusammen,
+
+ich hab wieder eine neue Version zusammengestellt.
+Download, Installtions- und Spielanleitung gibt es nach wie vor unter: \\
+http://nailor.devzero.de/code/glgames/website/squeeze.de.htm
+
+Für die Ungeduldigen:
+* Download: http://nailor.devzero.de/code/glgames/website/downloads/
+* Installation: '''nur falls nicht schon erledigt:''' sudo apt-get install ruby rubygems libopengl-ruby libsdl-ruby
+* Starten: in den entpackten Ordner wechseln und die Datei ''squeeze'' doppelklicken
+
+Änderungen:
+* Sound hinzugefügt
+* Hintergrundbild hinzugefügt
+* neue Grafik
+* diverse Änderungen
+
+Mit den Sounds und den neuen Grafiken bin ich noch nicht so ganz zufrieden... Wenn mir da jemand weiterhelfen könnte... :)
+
+'''Das wär's erstmal und ich freue mich auf Feedback!'''
+
+Gruß, \\ 
+Michael
+
+PS: Auflösung und Vollbild kann man im Startskript einstellen, wenn man es mit dem Texteditor öffnet...
+
