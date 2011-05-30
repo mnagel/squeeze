@@ -14,4 +14,7 @@ WINY=600
 # GFX="oldschool"
 GFX="default"
 
-ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX $@
+# select alternate sound
+SFX="default"
+
+ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX -s $SFX $@
