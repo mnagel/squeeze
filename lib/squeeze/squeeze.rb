@@ -153,10 +153,6 @@ class SqueezeGameEngine
     ball.view.colors = mouse.view.pict.colors
     mouse.view.pict.colors = ColorList.new(4) do Color.new(1.0, 1.0, 1.0, 1.0) end
 
-    mouse.model.growing = false
-          mouse.model.reset_after_spawn
-    mouse.model.size = V.new(Settings.mousedef, Settings.mousedef)
-
     if can_spawn_here $engine.mouse.model
       $sfxengine.play :create
       # TODO put sound code elsewhere.
@@ -179,6 +175,10 @@ class SqueezeGameEngine
       $engine.game_over
       ball.model.subs.clear
     end
+
+    mouse.model.growing = false
+    mouse.model.reset_after_spawn
+    mouse.model.size = V.new(Settings.mousedef, Settings.mousedef)
   end
 
   attr_accessor :mouse, :messages, :scoretext, :objects, :thing_not_to_intersect
@@ -313,7 +313,6 @@ class SqueezeGameEngine
     go.extend(Pulsing)
     sc.extend(Pulsing)
     $engine.messages << go << sc
-    $engine.external_timer.call_later(3000) do $engine.messages = []; GameMode.set_mode(GameMode::NORMAL) end
   end
 
   def spawn_enemy
@@ -336,6 +335,7 @@ class SqueezeGameEngine
   end
 
   def user_ends_game
+        $engine.messages = []
         $engine.ingame_timer.pause
         @textbuffer = ""
         GameMode.enter_name_input.set_text(@textbuffer)
