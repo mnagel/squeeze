@@ -5,7 +5,7 @@ list = ["squeeze", "tictactoe", "index.htm"]
 
 require 'find'
 dirs = ["lib", "gfx", "sfx", "website"]
-excludes = [".svn", "alt", "crush", "downloads"]
+excludes = ["alt", "crush", "downloads"]
 for dir in dirs
   Find.find(dir) do |path|
     if FileTest.directory?(path)
