@@ -17,4 +17,5 @@ GFX="default"
 # select alternate sound
 SFX="default"
 
+cd "$(dirname $0)"
 ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX -s $SFX $@
