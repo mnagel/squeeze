@@ -193,17 +193,11 @@ class Texture
     STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
     
     GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
-    #    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
-    #    GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-  
+
     val = swapcolors ? GL::BGRA : GL::RGBA
     myw = ceil_to_power_of_2(surf.w)
     myh = ceil_to_power_of_2(surf.h)
 
-    # wont work this way...
-    # surf2 = SDL::Surface.new(SDL::SRCALPHA, myw, myh, surf)
-    # SDL.blitSurface2(surf,[0,0,surf.w,surf.h],surf2,[(surf2.w-surf.w)/2,(surf2.h-surf.h)/2])
-    # surf.saveBMP("dumps/#{Float.rand(0, 1)}")
     surf2 = surf.copyRect(0,0,myw,myh)
 
     begin
@@ -249,7 +243,6 @@ class Entity
   attr_accessor :pos, :size, :r, :parent, :subs, :visible, :z # :x, :y, :z, :w, :h,
   
   def initialize x, y, w, h
-    # @pos.x, @pos.y, @size.x, @size.y = x, y, w, h
     @z = 0
     @r = 0
     @pos  = V.new(x, y)
@@ -276,7 +269,7 @@ class Entity
       @subs.each do |sub| sub.render end
 
 
-      draw_bounding_box if  Settings.show_bounding_boxes #$SHOW_BOUNDING_BOXES
+      draw_bounding_box if Settings.show_bounding_boxes
 
     end if @visible
   end
@@ -339,9 +332,6 @@ class OpenGL2D < Entity
 end
 
 # TODO add line class
-#class Line < OpenGL2D
-#  def initialize x, y,
-#end
 
 class Rect < OpenGL2D
   def render

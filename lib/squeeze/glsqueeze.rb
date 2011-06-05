@@ -21,8 +21,6 @@
 
 def draw_gl_scene
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
-#  define_screen 600, 600
-  
   define_screen
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
@@ -48,10 +46,8 @@ def draw_gl_scene
     GameMode.enter_name_headline.render
   end
 
-    if GameMode.get_mode == GameMode::SHOW_SCORES
+  if GameMode.get_mode == GameMode::SHOW_SCORES
     puts "GameMode.hs_text  is nil" if GameMode.show_highscores_texts.nil?
-    
-
     GameMode.show_highscores_texts.each do |item| item.render end
   end
 
@@ -73,9 +69,8 @@ class GLFrameWork
     $engine.update dt # TODO reverse logic here, let the engine call the gfx
     
     $engine.messages.each { |message|
-#      STDERR.puts "Message is a #{message}"
-#message = message.model if message.instance_variable_defined?(:@model)
-      message.tick dt }
+      message.tick dt
+    }
     $engine.mouse.model.tick dt
 
     $engine.objects.each {|o|
@@ -88,9 +83,7 @@ class GLFrameWork
 
   def prepare
     $engine.messages = []
-    #$engine.scoretext = Text.new(10, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
     $engine.scoretext = Text.new(Settings.winX / 2, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
-    #$engine.scoretext.extend(TopLeftPositioning)
 
     $tex = []
     good = Settings.gfx_good
@@ -123,6 +116,6 @@ end
     GameMode.show_highscores_texts = []
 
     3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-        Settings.fontsize  * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
+        Settings.fontsize * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
     end
   end

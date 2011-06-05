@@ -127,25 +127,15 @@ class SqueezeGameEngine
     return unless $engine.engine_running
     # TODO let things have a mass...
     ball = Bubble.new(mouse.model.pos.x, mouse.model.pos.y, mouse.model.size.x)
+    # FIXME bad cloning...
+    ball.model.v = mouse.model.v.clone.unit
+    ball.model.r = mouse.model.r
 
     points = $engine.size_to_score ball.model.size.x
 
-#    ball.extend(Velocity)
-#    ball.extend(Gravity)
-#    ball.extend(Bounded)
-#    ball.extend(DoNotIntersect)
-    ball.model.v = mouse.model.v.clone.unit
-    ball.model.r = mouse.model.r
-#    puts "#{mouse.r} mouse r"
-    puts "#{mouse.model.r} mouse model r"
-    puts "#{mouse.view.r} mouse view r"
-#    puts "#{ball.r} ball r"
-    puts "#{ball.model.r} ball model r"
-    puts "#{ball.view.r} ball view r"
+    a = Text.new(0, 0, 5, Color.new(1, 0, 0, 1), Settings.fontfile, points.to_i.to_s)
+    a.extend(Pulsing)
 
-
-    a = Text.new(0, 0, 5, Color.new(1,0,0,1), Settings.fontfile, (points).to_i.to_s)
-    a.extend(Pulsing);
     $engine.external_timer.call_later(1000) do ball.view.subs = [] end
     a.r = - ball.model.r
     ball.view.subs << a # FIXME added so they show at all. are not removed, do not tick right now...
@@ -161,8 +151,8 @@ class SqueezeGameEngine
       $engine.thing_not_to_intersect << ball
 
       $engine.mouse.view.gonna_spawn = $tex[rand($tex.length)]
-#      # TODO wait a second...
-       if $engine.score_object.score >= $engine.score_object.level_up_score
+      # TODO wait a second...
+      if $engine.score_object.score >= $engine.score_object.level_up_score
         # $engine.external_timer.call_later(1000) do
         $engine.bonus_score
         $engine.start_level($engine.score_object.cur_level += 1)
@@ -187,13 +177,9 @@ class SqueezeGameEngine
 
   def size_to_score radius
     area = Math::PI * radius ** 2
-    #    puts area
     perc = area / (Settings.winX * Settings.winY)
-    #    puts perc
     resu = (1 + perc) ** 2 - 1
-    #    puts resu
     retu = [1, (100 * resu).floor].max
-    #    puts retu
     retu
   end
 
@@ -214,7 +200,6 @@ class SqueezeGameEngine
     real = @ingame_timer.tick
 
     $engine.objects.each do |x|
-#      puts "ticking #{x.model}"
       if x.model.nil?
         STDERR.puts "updating a #{self}"
         STDERR.puts "but the model is nil!!!"
@@ -302,8 +287,9 @@ class SqueezeGameEngine
     punish_score
     GameMode.set_mode(GameMode::CRASHED)
     $engine.ingame_timer.pause
-    $engine.external_timer.call_later(3000) do $engine.ingame_timer.resume end
-
+    $engine.external_timer.call_later(3000) do
+      $engine.ingame_timer.resume
+    end
 
     gameoversize = Settings.fontsize
     go = Text.new(Settings.winX/2, Settings.winY * 0.4, gameoversize,
@@ -312,6 +298,7 @@ class SqueezeGameEngine
       Color.new(255, 255, 255, 0.8), Settings.fontfile, "enter => reset")
     go.extend(Pulsing)
     sc.extend(Pulsing)
+
     $engine.messages << go << sc
   end
 
@@ -320,16 +307,12 @@ class SqueezeGameEngine
       x = Float.rand(Settings.mousedef, Settings.winX - Settings.mousedef)
       y = Float.rand(Settings.mousedef, Settings.winY - Settings.mousedef)
 
-      spawning = EvilBubble.new(x, y, Settings.mousedef) #, $ene[rand($ene.length)])
+      spawning = EvilBubble.new(x, y, Settings.mousedef)
       spawning.view.texture = $ene[rand($ene.length)]
     end until get_collider_model(spawning.model).nil?
 
-    #TODO CHECK
-#    spawning.extend(Velocity)
-#    spawning.extend(Bounded)
-#    spawning.extend(DoNotIntersect)
-    spawning.model.v.x = Float.rand(-1,1)
-    spawning.model.v.y = Float.rand(-1,1)
+    spawning.model.v.x = Float.rand(-1, 1)
+    spawning.model.v.y = Float.rand(-1, 1)
     $engine.objects << spawning
     @thing_not_to_intersect << spawning
   end
@@ -419,7 +402,6 @@ class SqueezeGameEngine
       case key
       when SDL::Key::RETURN then
         $engine.messages.clear
-
         $engine.ingame_timer.resume
         @score_object = Score.new
         @score_object.cur_level = 0
@@ -484,8 +466,6 @@ def sdl_event event
 end
 
 begin
-  # require 'glsqueeze' # TODO do not have constant here
-  # TODO why was this *here*
   puts Settings.infotext
   $engine = SqueezeGameEngine.new
   $gfxengine = GLFrameWork.new
