@@ -21,40 +21,34 @@
 
 # TODO further seperate Model, View, Controller
 
-class BubbleModel < Entity
+class BubbleModelBase < Entity
   attr_accessor :controller
-
-#    include Velocity
-#    include Gravity
-#    include Bounded
-#    include DoNotIntersect
 
   def initialize(x, y, size)
     super(x, y, size, size)
+  end
+end
+
+class BubbleModel < BubbleModelBase
+  def initialize(x, y, size)
+    super(x, y, size)
 
     extend(Velocity)
     extend(Gravity)
     extend(Bounded)
     extend(DoNotIntersect)
-
-#        self.extend Rotating
-#    @rotating = true
   end
+end
 
-#  def tick dt
-#    super dt
-#    puts "ticking bubble r #{@r}"
-#  end
-#
-#  def tick
-#    controller.view
-#  end
+class EvilBubbleModel < BubbleModelBase
+  def initialize(x, y, size)
+    super(x, y, size)
 
-#    def initialize(x, y, size)
-#    super(x, y, size)
-#
-#  end
-
+    extend(Velocity)
+#    extend(Gravity)
+    extend(Bounded)
+    extend(DoNotIntersect)
+  end
 end
 
 class BubbleView < Circle
@@ -88,24 +82,13 @@ class BubbleView < Circle
 
 end
 
-## TODO remove this class
-#class TickSucker
-#  def tick delta
-#    puts STDERR.puts "sucking tick #{delta}"
-#  end
-#end
-
-class BubbleController #< TickSucker
+class BubbleController
   def initialize x, y, size
     @model = BubbleModel.new(x, y, size)
     @model.controller = self
     @view = BubbleView.new(x, y, size)
     @view.controller = self
   end
-
-#  def tick delta
-#    @model.tick delta
-#  end
 
   # TODO do not make them publicly available
   attr_accessor :model, :view;
@@ -114,8 +97,14 @@ end
 # TODO make subclass so that good and evil are different! subclasses of one class
 Bubble = BubbleController
 
+# FIXME copy&paste programming happens here...
 class EvilBubbleController < BubbleController
-
+  def initialize x, y, size
+    @model = EvilBubbleModel.new(x, y, size)
+    @model.controller = self
+    @view = BubbleView.new(x, y, size)
+    @view.controller = self
+  end
 end
 
 EvilBubble = EvilBubbleController
