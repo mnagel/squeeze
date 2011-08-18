@@ -300,6 +300,10 @@ class SqueezeGameEngine
     sc.extend(Pulsing)
 
     $engine.messages << go << sc
+    $engine.external_timer.call_later(3000) do
+      $engine.messages = [];
+      GameMode.set_mode(GameMode::NORMAL)
+    end
   end
 
   def spawn_enemy
