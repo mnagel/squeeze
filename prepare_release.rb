@@ -20,7 +20,7 @@ for dir in dirs
   end
 end
 
-args = "glgames.version-XXX.tar #{list.join(" ")}"
+args = "glgames.version-XXX.tar.gz #{list.join(" ")}"
 puts args
 
-system("tar -cvvf #{args}")
+system("tar -cvvzf #{args}")
