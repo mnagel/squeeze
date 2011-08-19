@@ -39,7 +39,8 @@ class SettingsBase
   # should fps be displayed
   attr_accessor :show_fps
   
-  # after how many frames should the fps be calculated # TODO change this to be based on time, not frames
+  # after how many frames should the fps be calculated
+  # TODO change this to be based on time, not frames
   attr_accessor :updaterate
   # how big freetype should render
   attr_accessor :freetype_fontsize
@@ -169,7 +170,8 @@ def ceil_to_power_of_2 int
 end
 
 class Texture
-  attr_accessor :gl_handle, :size, :content_rect # content rect: 0..1-normalized rect of actual content in texture
+  # content rect: 0..1-normalized rect of actual content in texture
+  attr_accessor :gl_handle, :size, :content_rect
   
   def kill!
     GL.DeleteTextures @gl_handle
@@ -226,7 +228,8 @@ class Texture
   end
   
   def self.render_text string, font 
-    sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255) # white, because color is set in opengl afterwards
+    # white, because color is set in opengl afterwards
+    sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255)
     return self.from_sdl_surface(sdlsurface, true)
   end
   
@@ -343,13 +346,17 @@ class Rect < OpenGL2D
       
       GL::Begin(GL_QUADS);
       GL.Color(@colors.as_a[0].as_a); # TODO explain what content_rect is
-      GL.TexCoord2d(0, @texture.content_rect.y); GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
+      GL.TexCoord2d(0, @texture.content_rect.y);
+      GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[1].as_a);
-      GL.TexCoord2d(@texture.content_rect.x, @texture.content_rect.y); GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
+      GL.TexCoord2d(@texture.content_rect.x, @texture.content_rect.y);
+      GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[2].as_a);
-      GL.TexCoord2d(@texture.content_rect.x, 0); GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
+      GL.TexCoord2d(@texture.content_rect.x, 0);
+      GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
       GL.Color(@colors.as_a[3].as_a);
-      GL.TexCoord2d(0, 0); GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
+      GL.TexCoord2d(0, 0);
+      GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
       GL::End();
       #unless @texture.nil?
       GL::BindTexture(GL::TEXTURE_2D, 0);
@@ -399,9 +406,10 @@ class Text < Rect
     @texture = Texture.render_text(text, @font)
     @size = V.new
     @size.y, @size.x = 1, 1 # FIXME explain the magic numbers
-    
-    @size.x = @texture.size.x * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack) #size
-    @size.y = @texture.size.y  * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack) #size
+
+    fact = (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+    @size.x = @texture.size.x * @fontsize / fact
+    @size.y = @texture.size.y  * @fontsize / fact
   end
   
   def initialize x, y, fontsize, color, font, text
@@ -592,7 +600,11 @@ class GLFrameWork
   def initialize
     @timer = Timer.new
     
-    SDL.setVideoMode(Settings.winX, Settings.winY, 0, (SDL::FULLSCREEN * Settings.fullscreen)|SDL::OPENGL|SDL::HWSURFACE)
+    SDL.setVideoMode(
+      Settings.winX,
+      Settings.winY,
+      0,
+      (SDL::FULLSCREEN * Settings.fullscreen)|SDL::OPENGL|SDL::HWSURFACE)
     
     init_gl_window(Settings.winX, Settings.winY)
     SDL::WM.setCaption(Settings.win_title, "")

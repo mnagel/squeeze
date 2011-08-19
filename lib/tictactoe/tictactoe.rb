@@ -243,11 +243,17 @@ class TicTacToe
       next unless field2[tryx][tryy].player == 0
 
       field2[tryx][tryy].player = @player
-      if check_winner(field2) != nil and check_winner(field2).first.player == @player then return tryx,tryy end
+      if check_winner(field2) != nil and check_winner(field2).first.player == @player then
+        return tryx, tryy
+      end
 
       other = @player == 1 ? 2 : 1
       field2[tryx][tryy].player = other
-      if check_winner(field2) != nil and check_winner(field2).first.player == other then if rand(10) > 1 then return tryx,tryy end end
+      if check_winner(field2) != nil and check_winner(field2).first.player == other then 
+        if rand(10) > 1 then 
+          return tryx, tryy
+        end
+      end
 
       field2[tryx][tryy].player = 0
       if rand(10) > 8 then return tryx,tryy end

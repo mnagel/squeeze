@@ -192,8 +192,22 @@ class SqueezeGameEngine
   def initialize!
     $sfxengine = SoundEngine.new
 
-    GameMode.enter_name_input = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "")
-    GameMode.enter_name_headline = Text.new(Settings.winX/2, Settings.winY*0.35, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "enter name")
+    GameMode.enter_name_input =
+      Text.new(
+        Settings.winX/2,
+        Settings.winY/2,
+        Settings.fontsize,
+        Color.new(0, 255, 0, 0.8),
+        Settings.fontfile,
+        "")
+    GameMode.enter_name_headline =
+      Text.new(
+        Settings.winX/2,
+        Settings.winY*0.35,
+        Settings.fontsize,
+        Color.new(0, 255, 0, 0.8),
+        Settings.fontfile,
+        "enter name")
 
     GameMode.fader = Rect.new(0, 0, Settings.winX, Settings.winY)
     GameMode.fader.colors = ColorList.new(4) { |i| Color.new(0, 0, 0, 0.8) }
@@ -246,7 +260,13 @@ class SqueezeGameEngine
     @score_object.level_up_score = 100 # 0.5 # TODO proper value
     if lvl > 0
       $sfxengine.play :levelup
-      go = Text.new(Settings.winX/2, Settings.winY/2, Settings.fontsize, Color.new(0, 255, 0, 0.8), Settings.fontfile, "level up!")
+      go = Text.new(
+        Settings.winX/2,
+        Settings.winY/2,
+        Settings.fontsize,
+        Color.new(0, 255, 0, 0.8),
+        Settings.fontfile,
+        "level up!")
       go.extend(Pulsing)
       $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go

@@ -18,7 +18,8 @@
 =end
 
 class Settings__ < SettingsBase
-  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext, :gfx_good, :gfx_bad, :gfx_back, :fontsize
+  attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext
+  attr_accessor :gfx_good, :gfx_bad, :gfx_back, :fontsize
 
   PROGNAME = "squeeze"
 
@@ -33,7 +34,13 @@ class Settings__ < SettingsBase
     # TODO clean up the new settings code..., remove onshot references
     switches = []
     @helpswitch = Switch.new('h', 'print help message',	false,
-      proc { puts "this is oneshot"; switches.each { |e| puts '-' + e.char + "\t" + e.comm }; Process.exit })
+      proc {
+        puts "this is oneshot"
+        switches.each { |e|
+          puts '-' + e.char + "\t" + e.comm 
+        };
+        Process.exit 
+      })
     switches = [
       Switch.new('g', 'select path with gfx (relative to gfx folder)', true, proc {|val| $GFX_PATH = val}),
       Switch.new('s', 'select path with sfx (relative to sfx folder)', true, proc {|val| $SFX_PATH = val}),
@@ -44,16 +51,18 @@ class Settings__ < SettingsBase
     ]
 
     fileswitch = proc { |val| puts "dont eat filenames, not even #{val}"};
-    #LOG_ERROR = 3
-    #noswitch = proc {|someswitch| log "there is no switch '#{someswitch}'\n\n", LOG_ERROR; @helpswitch.code.call; Process.exit };
-    #require "logger" # TODO dont use puts below!
-    noswitch = proc {|someswitch| puts("there is no switch '#{someswitch}'\n\n", 0, nil); @helpswitch.code.call; Process.exit };
+    # TODO dont use puts below!
+    noswitch = proc {|someswitch|
+      puts("there is no switch '#{someswitch}'\n\n", 0, nil);
+      @helpswitch.code.call;
+      Process.exit
+    };
 
     helpswitch = @helpswitch
 
     # TODO dont use global var
 
-        # TODO dont use global var
+    # TODO dont use global var
     $SFX_PATH = 'default'
 #    parse_args(switches, helpswitch, noswitch, fileswitch)
 

@@ -75,13 +75,21 @@ class GLFrameWork
       o.view.tick dt
     }
 
-    $engine.scoretext.set_text("score: #{($engine.score_object.scoreges).ceil.to_i} -- level up: #{(($engine.score_object.level_up_score-$engine.score_object.score)).ceil.to_i}") # TODO 0.5 is evil hack
+    score = $engine.score_object.scoreges.ceil.to_i
+    target = $engine.score_object.level_up_score-$engine.score_object.score.ceil.to_i
+    $engine.scoretext.set_text("score: #{score} -- level up: #{target}")
     $engine.scoretext.tick dt
   end
 
   def prepare
     $engine.messages = []
-    $engine.scoretext = Text.new(Settings.winX / 2, 30, 20, Color.new(255, 100, 255, 1.0), Settings.fontfile, "SCORE GO HERE")
+    $engine.scoretext = Text.new(
+      Settings.winX / 2,
+      30,
+      20,
+      Color.new(255, 100, 255, 1.0),
+      Settings.fontfile,
+      "SCORE GO HERE")
 
     $tex = []
     good = Settings.gfx_good
@@ -113,7 +121,12 @@ end
     puts "panic... got a nil" if hs.nil?
     GameMode.show_highscores_texts = []
 
-    3.times do |i| GameMode.show_highscores_texts << Text.new(Settings.winX/2, Settings.winY * ((i+2)/5.0),
-        Settings.fontsize * (1/3.0), Color.new(0, 255, 0, 0.8), Settings.fontfile, "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
+    3.times do |i| GameMode.show_highscores_texts << Text.new(
+      Settings.winX/2,
+      Settings.winY * ((i+2)/5.0),
+      Settings.fontsize * (1/3.0),
+      Color.new(0, 255, 0, 0.8),
+      Settings.fontfile,
+      "#{i+1}. #{hs[i].score.to_i} -- #{hs[i].name}")
     end
   end

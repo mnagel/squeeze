@@ -25,7 +25,11 @@ class SoundEngine
     pre = "sfx/squeeze/#{$SFX_PATH}/"
     puts "sounds from #{pre}"
     magic_buffer_size = 512
-    SDL::Mixer.open(frequency=SDL::Mixer::DEFAULT_FREQUENCY,format=SDL::Mixer::DEFAULT_FORMAT,cannels=SDL::Mixer::DEFAULT_CHANNELS,magic_buffer_size)
+    SDL::Mixer.open(
+      frequency=SDL::Mixer::DEFAULT_FREQUENCY,
+      format=SDL::Mixer::DEFAULT_FORMAT,
+      cannels=SDL::Mixer::DEFAULT_CHANNELS,
+      magic_buffer_size)
     @sounds = {}
     @sounds[:create] = SDL::Mixer::Wave.load("#{pre}/create.wav")
     @sounds[:crash] = SDL::Mixer::Wave.load("#{pre}/crash.wav")
