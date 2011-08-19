@@ -18,44 +18,26 @@
 =end
 
 # TODO fix exiting
-# TODO save essence of crush and then delete it
-
 # TODO block multiple messages at one time
 # TODO WISHLIST offer ingame tutorial -- howto inflate, howto score, howto level
 # TODO WISHLIST profile and speed up code
 # TODO WISHLIST add local/global setting files...
 # TODO WISHLIST document startup script options
 # TODO WISHLIST document superlinear and special scoring...
-# FIXME submitting scores bug... shown twice sometimes...
 # TODO version number in game
 # TODO add .desktop file
-# TODO michel: unterschiedliche punkte für unterschiedliche farben
-# TODO quadtree for faster collission detection
-# TODO sounds gleichlaut
-# TODO kugelrotation wird beim erstellen einer kugel nicht uebernommen
-# TODO skript to install all packages squeeze depends on
-
-# TODO nochmal zu squeeze: ich würde mich freuen, wenn ich immer zwischendurch sehen
-#könnte, wieviele Punkte ich pro Level erzielt habe, ev. würde auch die Angabe
-#des Levels reichen. Ich habe festgestellt, dass ich hohe Punktzahlen nur
-#erreiche, wenn ich möglichst früh sehr viele Punkte mache.
-#Und da erscheine ich niiiiiie bei Highscore und hätte deshalb meinen
-#eigenen Spaß, wenn ich wenigstens sehen könnte, wie weit ich in der
-#Relation Punkte/ Level bin. Kapiert? Dann kannst du das ja mal ändern?!
-
+# TODO different score for different colors
+# TODO quadtree/lib (box2d) for faster collission detection
+# TODO varying volume of sfx
 # TODO document, that pngs need be rgbA
 # TODO correctly rotate spawned bubble
 # TODO document switches (sound...)
 # TODO switch for differnt highscore file
-# TODO check if .svn excluded from releases (ls -lahR)
-
-# TODO Ränder deutlicher
-# TODO andere Stimme
-# TODO Levelanzahl anzeigen
-
+# TODO better borders for bubbles
+# TODO other voice
+# TODO show level number
 # TODO ingame menu
 # TODO tutorial screenshots
-#
 # TODO make differnet base level "Model", "View" and "Controller" Classes
 
 require 'glbase'
