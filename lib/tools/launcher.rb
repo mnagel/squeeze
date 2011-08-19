@@ -79,9 +79,6 @@ if a == "squeeze"
 elsif a == "tictactoe"
   $LOAD_PATH << './lib/tictactoe'
   require "gltictactoe"
-elsif a == "crush"
-  $LOAD_PATH << './lib/crush'
-  require "crush"
 else
   throw "unknown command... #{ARGV.join()}"
 end
