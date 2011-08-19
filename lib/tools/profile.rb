@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby -wKU
-
 =begin
     glgames - framework for some opengl games using ruby
     Copyright (C) 2009 by Michael Nagel

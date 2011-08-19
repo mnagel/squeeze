@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby -wKU
-
 =begin
     quadtree - a quadtree for glgames
     Copyright (C) 2009 by Michael Nagel

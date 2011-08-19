@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 =begin
     sharpmath - mathematical parser and algebraic calculations
     Copyright (C) 2006, 2008, 2009 by Michael Nagel

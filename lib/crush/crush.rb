@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby -wKU
-
 =begin
     crush - a simple game.
     Copyright (C) 2009 by Michael Nagel
