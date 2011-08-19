@@ -1,4 +1,8 @@
 #! /bin/bash
 
 cd "$(dirname $0)"
-ruby -rubygems ./lib/tools/launcher.rb tictactoe
+
+WHERE="."
+RUBYGEMS="-rubygems"
+
+ruby $RUBYGEMS "$WHERE/lib/tools/launcher.rb" tictactoe

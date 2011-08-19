@@ -18,4 +18,8 @@ GFX="default"
 SFX="default"
 
 cd "$(dirname $0)"
-ruby -rubygems ./lib/tools/launcher.rb squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX -s $SFX $@
+
+WHERE="."
+RUBYGEMS="-rubygems"
+
+ruby $RUBYGEMS "$WHERE/lib/tools/launcher.rb" squeeze -f $FULLSCREEN -x $WINX -y $WINY -g $GFX -s $SFX $@
