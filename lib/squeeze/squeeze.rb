@@ -257,7 +257,7 @@ class SqueezeGameEngine
   def start_level lvl
     @engine_running = true
     @mouse.model.growing = false
-    @score_object.level_up_score = 100 # 0.5 # TODO proper value
+    @score_object.level_up_score = 100
     if lvl > 0
       $sfxengine.play :levelup
       go = Text.new(

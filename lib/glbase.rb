@@ -265,42 +265,37 @@ class Entity
       end
       translate; scale; rotate;
 
-      yield if block_given?      
+      # the real deal is happening here...
+      yield if block_given?
+
+      # render sub-entities
       @subs.each do |sub| sub.render end
 
-
+      # debugging
       draw_bounding_box if Settings.show_bounding_boxes
-
     end if @visible
   end
 
   def draw_bounding_box
     GL::LineWidth(1)
-    @c = [1,0,0,1]
+    @c = [1, 0, 0, 1]
     GL.Color(@c)
     GL.Begin(GL::LINE_LOOP)
-
-    GL.Vertex3f( -1, -1, 0.0)
-    GL.Vertex3f( -1, +1, 0.0)
-    GL.Vertex3f( +1, +1, 0.0)
-    GL.Vertex3f( +1, -1, 0.0)
-
-    GL.Vertex3f( -1, -1, 0.0)
-
+      GL.Vertex3f( -1, -1, 0.0)
+      GL.Vertex3f( -1, +1, 0.0)
+      GL.Vertex3f( +1, +1, 0.0)
+      GL.Vertex3f( +1, -1, 0.0)
+      GL.Vertex3f( -1, -1, 0.0)
     GL.End()
-
 
     @c = [0,1,0,1]
     GL.Color(@c)
     GL.Begin(GL::LINE_LOOP);
-    angle = 0
-    while angle <= 2 * Math::PI
-
-      GL.Vertex3f(Math.cos(angle), Math.sin(angle), 0);
-
-      angle += Math::PI / 30
-    end
-
+      angle = 0
+      while angle <= 2 * Math::PI
+        GL.Vertex3f(Math.cos(angle), Math.sin(angle), 0);
+        angle += Math::PI / 30
+      end
     GL.End()
   end
 
@@ -336,32 +331,29 @@ end
 class Rect < OpenGL2D
   def render
     super do
-      #unless @gltexture.nil?
       GL::Enable(GL::TEXTURE_2D)
       GL::BindTexture(GL::TEXTURE_2D, @texture.gl_handle);
       
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-      #end
       
       GL::Begin(GL_QUADS);
-      GL.Color(@colors.as_a[0].as_a); # TODO explain what content_rect is
+      GL.Color(@colors.as_a[0].as_a);
       GL.TexCoord2d(0, @texture.content_rect.y);
-      GL.Vertex3d(-1, +1, 0) # unless @texture.nil?
+      GL.Vertex3d(-1, +1, 0)
       GL.Color(@colors.as_a[1].as_a);
       GL.TexCoord2d(@texture.content_rect.x, @texture.content_rect.y);
-      GL.Vertex3d(+1, +1, 0) # unless @texture.nil?
+      GL.Vertex3d(+1, +1, 0)
       GL.Color(@colors.as_a[2].as_a);
       GL.TexCoord2d(@texture.content_rect.x, 0);
-      GL.Vertex3d(+1, -1, 0) # unless @texture.nil?
+      GL.Vertex3d(+1, -1, 0)
       GL.Color(@colors.as_a[3].as_a);
       GL.TexCoord2d(0, 0);
-      GL.Vertex3d(-1, -1, 0) # unless @texture.nil?
+      GL.Vertex3d(-1, -1, 0)
       GL::End();
-      #unless @texture.nil?
+
       GL::BindTexture(GL::TEXTURE_2D, 0);
       GL::Disable(GL::TEXTURE_2D)
-      #end
     end
   end
 end
@@ -373,12 +365,10 @@ class Square < Rect
 end
 
 class Triangle < OpenGL2D
-
   @@TAN30 = Math::tan(30 * Math::PI / 180)
 
   def render
     super do
-      
       GL.Begin(GL::TRIANGLES)
       GL.Color(@colors.as_a[0].as_a)
       GL.Vertex3f(-1, -@@TAN30, 0.0)
@@ -404,34 +394,34 @@ class Text < Rect
     @texture.kill! unless @texture.nil?
     # re render texture
     @texture = Texture.render_text(text, @font)
-    @size = V.new
-    @size.y, @size.x = 1, 1 # FIXME explain the magic numbers
 
-    fact = (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
-    @size.x = @texture.size.x * @fontsize / fact
-    @size.y = @texture.size.y  * @fontsize / fact
+    fact = @fontsize.to_f / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+    sx = @texture.size.x * fact
+    sy = @texture.size.y * fact
+    @size = V.new(sx, sy)
   end
-  
+
   def initialize x, y, fontsize, color, font, text
     @text = "this_is_a_text_to_never_match_)@(3"
     @color = color
     @fontsize = fontsize
     @colors = ColorList.new(4) { |i| color }
     @font = nil
-    begin
 
+    begin
       @font = SDL::TTF.open(font, Settings.freetype_fontsize, index = 0)
       throw "font did not load" if @font.nil?
     rescue => exc
       throw "error opening font: #{font}"
     end
+
     @texture = nil
     set_text text
     t = @texture
     super x, y, @size.x, @size.y
     @texture = t
-    
-    @size.x = @texture.size.x* @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+
+    @size.x = @texture.size.x * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
     @size.y = @texture.size.y * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
   end
 end
@@ -635,9 +625,8 @@ class GLFrameWork
     while @running do
       until (event = SDL::Event2.poll).nil?
         sdl_event(event)
-        if not @running # FIXME something broken here!
-#          throw "should no longer run"
-Process.exit!(0) #FIXME ... but makes things work
+        if not @running
+          Process.exit!(0) # sometimes program does not exit otherwise
         end
       end
       
