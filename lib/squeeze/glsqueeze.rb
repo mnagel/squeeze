@@ -65,7 +65,7 @@ end
 class GLFrameWork
   def update_gfx dt
     $engine.update dt # TODO reverse logic here, let the engine call the gfx
-    
+
     $engine.messages.each { |message|
       message.tick dt
     }

@@ -1,6 +1,6 @@
 =begin
-    sharpmath - mathematical parser and algebraic calculations
-    Copyright (C) 2006, 2008, 2009 by Michael Nagel
+    squeeze - a simple game.
+    Copyright (C) 2009 by Michael Nagel
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,18 +31,14 @@ module Velocity
     rescue => exc
       STDERR.puts "no super"
       STDERR.puts "i am a: #{self}"
-      #1/0
     end
 
     begin
-
-    @pos.x += @v.x * dt
-    @pos.y += @v.y * dt
-
-          rescue => exc
+      @pos.x += @v.x * dt
+      @pos.y += @v.y * dt
+    rescue => exc
       STDERR.puts "no pos method"
       STDERR.puts "i am a: #{self}"
-      #1/0
     end
   end
 end
@@ -54,27 +50,27 @@ module Gravity
     delta = 3
     suckup = -0.5
     if @pos.y  > Settings.winY - @size.y - delta
-      @v.y *= 0.3 if @v.y > suckup and @v.y < 0 # TODO have another way of letting things rest...
+      # TODO have another way of letting things rest...
+      @v.y *= 0.3 if @v.y > suckup and @v.y < 0
       return
     end
 
-    @v.y += dt * 0.01 # axis is downwards # TODO check if this is indepent of screen size
+    # TODO check if this is indepent of screen size
+    @v.y += dt * 0.01 # axis is downwards
   end
 end
 
 module Bounded
-#  @@bounce = Settings.bounce
-
   def weaken
-    @v.x *= Settings.bounce #@@bounce
-    @v.y *= Settings.bounce #@@bounce
+    @v.x *= Settings.bounce
+    @v.y *= Settings.bounce
 
     if self.respond_to?(:on_collide, false)
       self.on_collide("crashed wall")
     end
   end
 
-  def tick dt # TODO rewrite the "bounded" code
+  def tick dt
     super
     # TODO objects "hovering" the bottom freak out sometimes
     if @pos.x < @size.x
@@ -118,8 +114,6 @@ module DoNotIntersect
   # http://web.comlab.ox.ac.uk/people/Stephen.Cameron/distances/
   # http://chrishecker.com/Rigid_Body_Dynamics
 
-#  @@bounce = Settings.bounce
-
   def tick dt
     old_pos = self.pos.clone
     super dt
@@ -127,12 +121,6 @@ module DoNotIntersect
     collider = $engine.get_collider_model(self)
 
     unless collider.nil?
-#      if @model.nil?
-#        STDERR.puts "my model is nil"
-#        STDERR.puts "i am a #{self}"
-#
-#      end
-
       # TODO having them not move at all is not correct, either
       # prevent them from getting stuck to each other
       self.pos = old_pos
@@ -145,8 +133,8 @@ module DoNotIntersect
         self.size.x ** 2 ,
         collider.size.x ** 2)
 
-      self.v = r1 * Settings.bounce #@@bounce
-      collider.v = r2 * Settings.bounce #@@bounce
+      self.v = r1 * Settings.bounce
+      collider.v = r2 * Settings.bounce
 
       if self.respond_to?(:on_collide, false)
         self.on_collide(collider)

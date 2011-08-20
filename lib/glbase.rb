@@ -38,7 +38,7 @@ class SettingsBase
   attr_accessor :win_title
   # should fps be displayed
   attr_accessor :show_fps
-  
+
   # after how many frames should the fps be calculated
   # TODO change this to be based on time, not frames
   attr_accessor :updaterate
@@ -91,49 +91,49 @@ class Color
   def r
     @data[0]
   end
-  
+
   def g
     @data[1]
   end
-  
+
   def b
     @data[2]
   end
-  
+
   def a
     @data[3]
   end
-  
+
   def r=val
     @data[0] = val
   end
-  
+
   def g=val
     @data[1] = val
   end
-  
+
   def b=val
     @data[2] = val
   end
-  
+
   def a=val
     @data[3] = val
   end
-  
+
   def initialize r, g, b, a=1
     @data = [r, g, b, a]
   end
-  
+
   def self.random r, g, b, a=1
     min =     0.2
     max = 1 - min
     return self.new(
-      r * (min + Float.rand(min, max)), 
-      g * (min + Float.rand(min, max)), 
-      b * (min + Float.rand(min, max)), 
+      r * (min + Float.rand(min, max)),
+      g * (min + Float.rand(min, max)),
+      b * (min + Float.rand(min, max)),
       a)
   end
-  
+
   def as_a
     return @data
   end
@@ -141,7 +141,7 @@ end
 
 class ColorList
   attr_accessor :vals
-  
+
   def initialize len, &code
     @vals = Array.new(len) do |index| code.call(index) end
     if len < 3 and
@@ -153,7 +153,7 @@ class ColorList
       end
     end
   end
-  
+
   def as_a
     return @vals
   end
@@ -172,11 +172,11 @@ end
 class Texture
   # content rect: 0..1-normalized rect of actual content in texture
   attr_accessor :gl_handle, :size, :content_rect
-  
+
   def kill!
     GL.DeleteTextures @gl_handle
   end
-  
+
   # TODO remember to call kill!() at the end -- let it have some kind of finalizer
   def initialize handle, w, h, wmax = 1.0, hmax = 1.0
     @size = V.new
@@ -186,18 +186,18 @@ class Texture
 
   def self.from_sdl_surface surf, swapcolors = false
     my_gl_handle = GL.GenTextures(1).first;
-    
+
     STDERR.puts "really, really check if you are allocating textures correctly. are you trying to
       create them before init of sdl/opengl has finished?!?" if my_gl_handle > 3000000
     STDERR.puts "ERRRRRRRRRRRRROR" if GL.GetError != 0
-    
+
     GL::BindTexture(GL::TEXTURE_2D, my_gl_handle);
 
     val = swapcolors ? GL::BGRA : GL::RGBA
     myw = ceil_to_power_of_2(surf.w)
     myh = ceil_to_power_of_2(surf.h)
 
-    surf2 = surf.copyRect(0,0,myw,myh)
+    surf2 = surf.copyRect(0, 0, myw, myh)
 
     begin
       GL::TexImage2D(GL::TEXTURE_2D, 0, GL::RGBA, myw, myh, 0,
@@ -216,7 +216,7 @@ class Texture
     my_w, my_h = surf2.w, surf2.h
     return self.new(my_gl_handle, my_w, my_h, surf.w/myw.to_f, surf.h/myh.to_f)
   end
-  
+
   def self.load_file filename
     begin
       sdlsurface = SDL::Surface.load(filename)
@@ -226,13 +226,13 @@ class Texture
       return self.none
     end
   end
-  
-  def self.render_text string, font 
+
+  def self.render_text string, font
     # white, because color is set in opengl afterwards
     sdlsurface = font.renderBlendedUTF8(string, 255, 255, 255)
     return self.from_sdl_surface(sdlsurface, true)
   end
-  
+
   @@none = self.new(0, 0, 0)
   def self.none
     return @@none
@@ -240,23 +240,23 @@ class Texture
 end
 
 class Entity
-  attr_accessor :pos, :size, :r, :parent, :subs, :visible, :z # :x, :y, :z, :w, :h,
-  
+  attr_accessor :pos, :size, :r, :parent, :subs, :visible, :z
+
   def initialize x, y, w, h
     @z = 0
     @r = 0
     @pos  = V.new(x, y)
     @size = V.new(w, h)
-    
+
     @visible = true
     @parent = nil
     @subs = []
   end
-  
+
   def tick dt
     @subs.each do |sub| sub.tick dt end
   end
-  
+
   def render
     with_some_matrix do
       if @colors.nil?
@@ -310,7 +310,7 @@ class Entity
   def rotate
     GL.Rotate(r,0,0,1)
   end
-  
+
   def addsub sub
     @subs << sub
     sub.parent = self
@@ -319,7 +319,7 @@ end
 
 class OpenGL2D < Entity
   attr_accessor :colors, :texture
-  
+
   def initialize x, y, w, h
     super x, y, w, h
     @texture = Texture.none
@@ -333,10 +333,10 @@ class Rect < OpenGL2D
     super do
       GL::Enable(GL::TEXTURE_2D)
       GL::BindTexture(GL::TEXTURE_2D, @texture.gl_handle);
-      
+
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
-      
+
       GL::Begin(GL_QUADS);
       GL.Color(@colors.as_a[0].as_a);
       GL.TexCoord2d(0, @texture.content_rect.y);
@@ -372,13 +372,13 @@ class Triangle < OpenGL2D
       GL.Begin(GL::TRIANGLES)
       GL.Color(@colors.as_a[0].as_a)
       GL.Vertex3f(-1, -@@TAN30, 0.0)
-      
+
       GL.Color(@colors.as_a[1].as_a)
       GL.Vertex3f(0, 2*@@TAN30, 0.0)
-      
+
       GL.Color(@colors.as_a[2].as_a)
       GL.Vertex3f(1, -@@TAN30, 0.0)
-      GL.End()       
+      GL.End()
     end
   end
 end
@@ -386,7 +386,7 @@ end
 # TODO allow multiline text...
 class Text < Rect
   attr_reader :text
-  
+
   def set_text text
     text = " " if text.nil? or text.length < 1
     return if (text == @text)
@@ -421,8 +421,9 @@ class Text < Rect
     super x, y, @size.x, @size.y
     @texture = t
 
-    @size.x = @texture.size.x * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
-    @size.y = @texture.size.y * @fontsize / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+    fact = @fontsize.to_f / (Settings.freetype_fontsize * Settings.freetype_adjustment_hack)
+    @size.x = @texture.size.x * fact
+    @size.y = @texture.size.y * fact
   end
 end
 
@@ -443,13 +444,13 @@ module Rotating
     super
     o.instance_eval do
       @rotating = false
-    end # sneak in the rotating AUTOMATICALLY...
+    end # sneak in rotating AUTOMATICALLY...
   end
 
   def tick dt
     super; return unless @rotating
-    
-    @r += 0.03 * dt 
+
+    @r += 0.03 * dt
   end
 end
 
@@ -461,21 +462,22 @@ module Pulsing
       @pulsing = true
       @max_h = @size.y
       @max_w = @size.x
-    end # sneak in the v AUTOMATICALLY...
+    end # sneak in pulse, pulsing, max_h/w AUTOMATICALLY...
   end
-    
+
   def tick dt
-    super; return unless @pulsing
- 
+    super
+    return unless @pulsing
+
     @pulse += 0.003 * dt
     sin = Math.cos(@pulse)
     @size.x = @max_w * 0.5 * (1 + sin * sin)
     @size.y = @max_h * 0.5 * (1 + sin * sin)
   end
-    
+
   attr_accessor :pulse, :pulsing
 end
-  
+
 module TopLeftPositioning
   def translate
     super
@@ -485,7 +487,6 @@ end
 
 SDL::TTF.init
 SDL.init(SDL::INIT_VIDEO | SDL::INIT_AUDIO)
-
 
 def with_some_matrix
   # test with removing the pushes/pops and manually unrotating, scaling, translating
@@ -512,55 +513,55 @@ class Timer
     @total_time = 0.0
     @hooks = []
   end
-  
+
   attr_reader :running
-  
+
   def tick
     time = Time.now
     delta = @running ? 1000 * (time - @last_tick).to_f : 0.0
     @last_tick = time
     @tick_count += 1
-    
+
     if @tick_count.modulo(Settings.updaterate) == 0
       delta2 = (@last_tick - @tick_rate_ref).to_f
       @tick_rate_ref = @last_tick
       @tick_rate = (Settings.updaterate / delta2).to_i
     end
-    
+
     @hooks.delete_if { |item|
       if item.first < @total_time
         item.last.call
         true
       else
         false
-      end      
+      end
     }
-    
+
     @total_time += delta
-    return delta  
+    return delta
   end
-  
+
   def call_later(delta, &block)
     @hooks << [@total_time + delta, block]
   end
-  
+
   def wipe! call_all = true
     @hooks.each { |item| item.last.call } if call_all
     @hooks.clear
   end
-  
+
   def ticks_per_second
     return @tick_rate
   end
-  
+
   def toggle
     @running ? pause : resume
   end
-  
+
   def pause
     @running = false
   end
-  
+
   def resume
     @running = true
     @last_tick = Time.now
@@ -598,16 +599,16 @@ class GLFrameWork
   end
 
   attr_accessor :running, :timer, :fpstext
-  
+
   def initialize
     @timer = Timer.new
-    
+
     SDL.setVideoMode(
       Settings.winX,
       Settings.winY,
       0,
       (SDL::FULLSCREEN * Settings.fullscreen)|SDL::OPENGL|SDL::HWSURFACE)
-    
+
     init_gl_window(Settings.winX, Settings.winY)
     SDL::WM.setCaption(Settings.win_title, "")
     SDL::Mouse.hide()
@@ -619,7 +620,7 @@ class GLFrameWork
   def window_title=(title)
     SDL::WM.setCaption(title, "")
   end
-  
+
   def run!
     @running = true
     while @running do
@@ -629,7 +630,7 @@ class GLFrameWork
           Process.exit!(0) # sometimes program does not exit otherwise
         end
       end
-      
+
       delta = @timer.tick
 
       @fpstext.tick delta
@@ -642,7 +643,7 @@ class GLFrameWork
       SDL.GLSwapBuffers
     end
   end
-  
+
   def kill!
     @running = false
   end

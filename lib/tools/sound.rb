@@ -41,6 +41,4 @@ class SoundEngine
   def play snd
     SDL::Mixer.play_channel(1, @sounds[snd], 0)
   end
-
-
 end

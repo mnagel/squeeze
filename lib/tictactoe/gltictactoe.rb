@@ -35,7 +35,7 @@ class Settings__ < SettingsBase
     icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
     icons licensed under Creative Commons BY-NC-SA
 EOT
-    
+
     @show_bounding_boxes = false
   end
 end
@@ -43,13 +43,13 @@ end
 Settings = Settings__.new
 
 class Mark
-  alias_method :original, :initialize 
+  alias_method :original, :initialize
   attr_accessor :gfx
-  
+
   def initialize x, y
     original(x, y)
-    @gfx = MarkGFX.new(100+(x)*200,100+y*200, 80, self, 
-      :color_p1 => ColorList.new(3) do Color.random(1, 0, 0) end,  
+    @gfx = MarkGFX.new(100+(x)*200,100+y*200, 80, self,
+      :color_p1 => ColorList.new(3) do Color.random(1, 0, 0) end,
       :color_p2 => ColorList.new(3) do Color.random(0, 0, 1) end)
     @gfx.extend(Pulsing)
     @gfx.pulsing = false
@@ -61,10 +61,10 @@ class TicTacToeGL < TicTacToe
 
     puts "game was won by #{winner}, with stones #{winning_stones}"
     super winner, winning_stones
-    winning_stones.each { |item| 
+    winning_stones.each { |item|
       item.gfx.pulsing = true
     }
-    
+
     $gfxengine.message = Text.new(Settings.winX/2, Settings.winY/2, 120,
       Color.new(0, 255, 0, 0.8), Settings.fontfile, "PLAYER #{winner} WINS!")
     $gfxengine.message.extend(Pulsing)
@@ -81,7 +81,7 @@ class TicTacToeGL < TicTacToe
     $gfxengine.timer.call_later(3000) do $gfxengine.message = nil end
 
   end
-      
+
   def on_game_start
     super
     return if $welcome.nil?
@@ -93,12 +93,12 @@ end
 
 class Mouse < Entity
   include Rotating
-  
+
   def initialize x, y, size, color_hash
     super x, y, size, size
     @colors = color_hash[:colors_out]
     @colors_in = color_hash[:colors_in]
-    
+
     @textures = [Texture.none, $p1, $p2]
 
     @green = Triangle.new(0, 0, 1, 1)
@@ -114,40 +114,40 @@ class Mouse < Entity
     @subs << @green
     @green.subs << @sign
     @sign.subs  << @pict
-    
+
     @rotating = true
     tick 0
   end
-  
+
   def tick dt
     super dt
     @sign.colors  = @colors_in[$game.player]
     @pict.texture = @textures[$game.player]
     @pict.visible = (not $game.gameover?)
   end
-  
+
 end
 
 class MarkGFX < Triangle
   include Rotating
-  
+
   def initialize x, y, size, mark, color_hash
     super x, y, size, size
     @c1 = color_hash[:color_p1]
     @c2 = color_hash[:color_p2]
     @mark = mark
     @visible = false
-    
+
     @rotating = true
-    
+
     subs << Square.new(0, 0, 0.5)
     subs.first.colors = ColorList.new(4) do Color.random(255, 255, 255) end
     subs.each do |s| s.visible = false end
   end
-  
+
   def tick dt
     super
-    
+
     if @mark.nil? or @mark.player == 0
       @visible = false
       return
@@ -155,7 +155,7 @@ class MarkGFX < Triangle
       @visible = true
       subs.each do |s| s.visible = true end
     end
-    
+
     case @mark.player
     when 1 then self.colors = @c1; subs.first.texture = $p1
     else self.colors = @c2; subs.first.texture = $p2
@@ -169,25 +169,25 @@ def draw_grid
   a = 0.5
   @c = [0,a,0,1]
   @d = [0,a,0,1]
-  
+
   GL.Begin(GL::LINES)
   for x in [200,400]
-    GL.Color(  @c)  
+    GL.Color(  @c)
     for y in [50,550]
-      GL.Vertex3f( x, y, 0.0)     
-      GL.Color(  @d)  
+      GL.Vertex3f( x, y, 0.0)
+      GL.Color(  @d)
     end
   end
-  
+
   for x2 in [200,400]
-    GL.Color(  @c)  
+    GL.Color(  @c)
     for y2 in [50,550]
-      GL.Vertex3f( y2, x2, 0.0) 
-      GL.Color(  @d)  
+      GL.Vertex3f( y2, x2, 0.0)
+      GL.Color(  @d)
     end
   end
-  
-  GL.End()   
+
+  GL.End()
 end
 
 def update_gfx dt
@@ -208,11 +208,11 @@ def draw_gl_scene
   GL::Clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT)
   define_screen 600, 600
   draw_grid
-  
-  $game.field.each { |x,y,o| 
+
+  $game.field.each { |x,y,o|
     o.gfx.render
   }
-  
+
   define_screen
   GL::Enable(GL::BLEND)
   GL::BlendFunc(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA)
@@ -231,7 +231,7 @@ def on_key_down key
     $gfxengine.kill!
   when 48 then # Zero
     unless $game.gameover?
-      a, b = $game.ki_get_move; 
+      a, b = $game.ki_get_move;
       $game.do_move(a,b)
     end
   when 97 then # A
@@ -254,13 +254,13 @@ def on_mouse_down button, x, y
     fx = (x / (Settings.winX/3)).to_i # TODO add method to calculate coordinates
     fy = (y / (Settings.winY/3)).to_i
     unless $game.gameover?
-      $game.do_move(fx,fy) 
+      $game.do_move(fx,fy)
     end
   when SDL::Mouse::BUTTON_MIDDLE then
     unless $game.gameover?
-      a, b = $game.ki_get_move; 
-      $game.do_move(a,b) 
-    end    
+      a, b = $game.ki_get_move;
+      $game.do_move(a,b)
+    end
   end
 end
 
@@ -291,13 +291,13 @@ class GLFrameWork
 
     $p1 = Texture.load_file("gfx/a.png")
     $p2 = Texture.load_file("gfx/b.png")
-    @m = Mouse.new(100, 100, 100, 
+    @m = Mouse.new(100, 100, 100,
       :colors_in => [
         ColorList.new(3) do Color.random(1, 1, 1, 0.1) end, # gameover
         ColorList.new(3) do Color.random(1, 0, 0, 0.7) end, # p1
         ColorList.new(3) do Color.random(0, 0, 1, 0.7) end  # p2
-      ],  
-      :colors_out => 
+      ],
+      :colors_out =>
         ColorList.new(3) do Color.random(0, 0.8, 0, 0.7) end)
 
     $welcome = Text.new(Settings.winX/2, Settings.winY/2, 120,

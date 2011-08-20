@@ -25,19 +25,19 @@ class Matrix
     @x, @y = x,y
     @val = Array.new(x) { |i| Array.new(y) { |j| yield(i,j)  } }
   end
-  
+
   # allows acessing the values directly
   def [](index)
     @val[index]
   end
-  
+
   # yield:: block is called for each value, with indexes and value
   def each
-    @val.each_with_index { |o, i| 
+    @val.each_with_index { |o, i|
       o.each_with_index { |p, j| yield(i,j,p) }
     }
   end
-  
+
   # returns a deep copy of the matrix
   def clone
     return (Matrix.new(@x,@y) do |i,j| self[i][j].clone end)
@@ -47,17 +47,17 @@ end
 # the Mark class represents the nine marks on the board
 class Mark
   attr_reader :x, :y, :winner
-  attr_accessor :player 
-  
+  attr_accessor :player
+
   def initialize x, y
     @x, @y = x, y
     @player, @winner = 0, false
   end
-  
+
   def is_winner!
     @winner = true
   end
-  
+
   def to_s
     "|#{@x}-#{@y}--#{@player}|"
   end
@@ -65,56 +65,56 @@ end
 
 # class to simulate a game of tictactoe
 class TicTacToe
-  
+
   # mapping between the num-pad - keys and the coordinates in the game field
   $keymap = Hash.new
   (0..8).each { |i| $keymap[i+1] = [i%3,(8-i)/3] }
-	
+
   # internal array used to represent the state of the game
   # readable to allow unit-testing and the like
   attr_accessor :field, :player
-	
+
   # constructor
-  # creating a new @field 
+  # creating a new @field
   # setting @player to 2, because it's flipped before a move
   def initialize
     @field = Matrix.new(3,3){|i,j| Mark.new(i,j) }
     @player = 1
     on_game_start
   end
-  
+
   # prints the field, with the board on the left and a list of possible moves
   # on the right
   # adds some kind of boarder around...
   def to_s
     r = "##### ##### ##### ##### #####\n"
     (0..2).each { |y|
-      (0..2).each { |x| 
+      (0..2).each { |x|
         r += get_print_char(x,y, '.') + " "
       }
       r += (" " * 5)
-      (0..2).each { |x| 
+      (0..2).each { |x|
         r += get_print_char(x,y, nil, " ", " ") + " "
       }
       r += "\n"
-    } 
+    }
     r += '##### ##### ##### ##### #####'
   end
-  
+
   # find the character that will be used to print...
   # *index*:: index des zu besetzenden feldes
   # *leer*:: character for empty fields
   # *one*:: character for fields occupied by player one
   # *two*:: same for player two
   def get_print_char x,y, leer = nil, one = 'X', two = 'O'
-    
+
     #return "@" if @field[x][y].winner
-    
+
     case @field[x][y].player
     when 1 then one
     when 2 then two
     else
-      if leer.nil? then 
+      if leer.nil? then
         $keymap.invert[[x,y]].to_s
       else
         leer
@@ -123,13 +123,13 @@ class TicTacToe
   end
 
   def on_game_start
-    
+
   end
 
   def on_gameover
-    
+
   end
-  
+
   def on_game_won winner, winning_stones
     puts "#{winner} won the game"
 
@@ -145,7 +145,7 @@ class TicTacToe
     unless (w = check_winner).nil?
       on_game_won  w.first.player, w
     end
-    
+
     @player = @player == 1 ? 2 : 1
     if gameover?
       @player = 0
@@ -158,7 +158,7 @@ class TicTacToe
     return false unless (0..3) === x
     return false unless (0..3) === y
     return @field[x][y].player == 0
-  end	
+  end
 
   # get a move (from user) that is definitely valid
   def get_valid_move
@@ -168,17 +168,17 @@ class TicTacToe
       if i == 0
         return ki_get_move
       else
-        x,y = $keymap[i]			
+        x,y = $keymap[i]
       end
     end until is_valid_move(x,y)
     return x,y
   end
-  
+
   def check_winner thefield = @field
     winners = []
-    
+
     checks = []
-    
+
     d1 = []
     d2 = []
     (0..2).each { |a|
@@ -190,13 +190,13 @@ class TicTacToe
       }
       checks << c1
       checks << c2
-      
+
       d1 << thefield[a][a]
       d2 << thefield[a][2-a]
     }
     checks << d1
     checks << d2
-        
+
     (1..2).each { |player|
       checks.each { |c|
         d = c.map { |item| item.player } << player
@@ -208,10 +208,10 @@ class TicTacToe
     if winners.length > 0
       return winners
     end
-    
+
     return nil
   end
-  
+
   # returns true if the field is full
   def full?
     for x in 0..2
@@ -249,8 +249,8 @@ class TicTacToe
 
       other = @player == 1 ? 2 : 1
       field2[tryx][tryy].player = other
-      if check_winner(field2) != nil and check_winner(field2).first.player == other then 
-        if rand(10) > 1 then 
+      if check_winner(field2) != nil and check_winner(field2).first.player == other then
+        if rand(10) > 1 then
           return tryx, tryy
         end
       end
@@ -273,7 +273,7 @@ if __FILE__ == $0
       a,b = game.get_valid_move
       game.do_move(a,b)
       puts game.to_s
-    end 
+    end
 
     if (temp = game.check_winner).nil?
       puts 'game over'

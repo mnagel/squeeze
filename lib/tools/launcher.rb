@@ -37,19 +37,17 @@ if RUBY_PLATFORM =~ /linux/
   trap('EXIT','EXIT')
 end
 
-
-
-  # get a file as single string
-  # TODO put this somewhere better
-  # TODO can fail badly
-  def get_file_as_string(filename)
-    data = ''
-    f = File.open(filename, "r")
-    f.each_line do |line|
-      data += line
-    end
-    return data
+# get a file as single string
+# TODO put this somewhere better
+# TODO can fail badly
+def get_file_as_string(filename)
+  data = ''
+  f = File.open(filename, "r")
+  f.each_line do |line|
+    data += line
   end
+  return data
+end
 
 # TODO put these in a utility file
 class Float

@@ -90,7 +90,6 @@ class GameMode # TODO check against this state all over the place!
 end
 
 class SqueezeGameEngine
-  
     def can_spawn_here mouse_model
     if     mouse_model.pos.x < mouse_model.size.x                 \
         or mouse_model.pos.y < mouse_model.size.y                 \
@@ -250,7 +249,6 @@ class SqueezeGameEngine
         return res.model unless res.nil?
       end
     }
-   # return res
    return nil
   end
 

@@ -66,7 +66,8 @@ class HighScores
 
   # get top n entries in order
   def get n
-    @entries.sort! { |a,b| a.score <=> b.score }.reverse! # order by date as second criterium
+    # TODO order by date as second criterium
+    @entries.sort! { |a,b| a.score <=> b.score }.reverse!
     return @entries.slice(0..n-1)
   end
 
@@ -121,4 +122,3 @@ end
 # TODO dispose of global var
 HIGHSCOREFILEPATH = "#{ENV['HOME']}/.squeeze.hs.yaml"
 $hs =  HighScores.load HIGHSCOREFILEPATH
-#puts "hs is #{$hs.to_s}"
