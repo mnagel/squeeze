@@ -436,6 +436,18 @@ class Text < Rect
   end
 end
 
+class Text2 < Text # Text using all space inside an Entity
+  def set_text text
+    super text
+    @size = V.new(1, 1)
+  end
+
+  def initialize x, y, fontsize, color, font, text
+    super x, y, fontsize, color, font, text
+    @size = V.new(1, 1)
+  end
+end
+
 module Rotating
     def self.extend_object(o)
     super

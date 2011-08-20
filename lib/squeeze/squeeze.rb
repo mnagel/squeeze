@@ -113,7 +113,7 @@ class SqueezeGameEngine
 
     points = $engine.size_to_score ball.model.size.x
 
-    a = Text.new(0, 0, 5, Color.new(1, 0, 0, 1), Settings.fontfile, points.to_i.to_s)
+    a = Text2.new(0, 0, 5, Color.new(1, 0, 0, 1), Settings.fontfile, points.to_i.to_s)
     a.extend(Pulsing)
 
     $engine.external_timer.call_later(1000) do ball.view.subs = [] end
