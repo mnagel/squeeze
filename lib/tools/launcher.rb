@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -wKU
+#!/usr/bin/ruby1.8
 
 =begin
     glgames - framework for some opengl games using ruby
