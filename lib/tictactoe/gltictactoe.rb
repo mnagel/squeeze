@@ -31,9 +31,6 @@ class Settings__ < SettingsBase
     @infotext = <<EOT
     tictactoe - tic tac toe game
     Copyright (C) 2008, 2009 by Michael Nagel
-
-    icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
-    icons licensed under Creative Commons BY-NC-SA
 EOT
 
     @show_bounding_boxes = false

@@ -88,9 +88,6 @@ class Settings__ < SettingsBase
     @infotext  = <<EOT
     #{PROGNAME} - a simple game.
     Copyright (C) 2009 by Michael Nagel
-
-    icons from buuf1.04.3 http://gnome-look.org/content/show.php?content=81153
-    icons licensed under Creative Commons BY-NC-SA
 EOT
   end
 end
