@@ -76,8 +76,9 @@ class GLFrameWork
     }
 
     score = $engine.score_object.scoreges.ceil.to_i
-    target = $engine.score_object.level_up_score-$engine.score_object.score.ceil.to_i
-    $engine.scoretext.set_text("score: #{score} -- level up: #{target}")
+    target = $engine.score_object.level_up_score - $engine.score_object.score.ceil.to_i
+    lvl = $engine.score_object.cur_level + 1
+    $engine.scoretext.set_text("score: #{score} -- level: #{lvl} -- left: #{target}")
     $engine.scoretext.tick dt
   end
 
