@@ -19,7 +19,7 @@
 
 class Settings__ < SettingsBase
   attr_accessor :bounce, :show_bounding_boxes, :mousedef, :infotext
-  attr_accessor :gfx_good, :gfx_bad, :gfx_back, :fontsize
+  attr_accessor :gfx_good, :gfx_bad, :gfx_back, :fontsize, :message_clear_delay
 
   PROGNAME = "squeeze"
 
@@ -76,7 +76,7 @@ class Settings__ < SettingsBase
     inf = 'default' if inf.nil?
 
 
-
+    @message_clear_delay = 1500
     @fontsize = 150 * @winX / 750.0  # TODO check scaling
     @gfx_good = "gfx/#{PROGNAME}/#{inf}/good/"
     @gfx_bad = "gfx/#{PROGNAME}/#{inf}/bad/"

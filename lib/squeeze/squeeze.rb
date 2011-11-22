@@ -115,7 +115,7 @@ class SqueezeGameEngine
     a = Text2.new(0, 0, 5, Color.new(1, 0, 0, 1), Settings.fontfile, points.to_i.to_s)
     a.extend(Pulsing)
 
-    $engine.external_timer.call_later(1000) do ball.view.subs = [] end
+    $engine.external_timer.call_later(Settings.message_clear_delay) do ball.view.subs = [] end
     a.r = - ball.model.r
     ball.view.subs << a # FIXME added so they show at all. are not removed, do not tick right now...
 
@@ -132,7 +132,6 @@ class SqueezeGameEngine
       $engine.mouse.view.gonna_spawn = $tex[rand($tex.length)]
       # TODO wait a second...
       if $engine.score_object.score >= $engine.score_object.level_up_score
-        # $engine.external_timer.call_later(1000) do
         $engine.bonus_score
         $engine.start_level($engine.score_object.cur_level += 1)
         # end
@@ -266,9 +265,11 @@ class SqueezeGameEngine
         Settings.fontfile,
         "level up!")
       go.extend(Pulsing)
-      $engine.external_timer.call_later(3000) do $engine.messages = [] end
       $engine.messages << go
 
+	  $engine.external_timer.call_later(Settings.message_clear_delay) do
+      	  $engine.messages = []
+      end
     end
 
     $engine.objects = []
@@ -285,8 +286,10 @@ class SqueezeGameEngine
     punish_score
     GameMode.set_mode(GameMode::CRASHED)
     $engine.ingame_timer.pause
-    $engine.external_timer.call_later(3000) do
+    $engine.external_timer.call_later(Settings.message_clear_delay) do
       $engine.ingame_timer.resume
+      $engine.messages = []
+      GameMode.set_mode(GameMode::NORMAL)
     end
 
     gameoversize = Settings.fontsize
@@ -298,10 +301,6 @@ class SqueezeGameEngine
     sc.extend(Pulsing)
 
     $engine.messages << go << sc
-    $engine.external_timer.call_later(3000) do
-      $engine.messages = [];
-      GameMode.set_mode(GameMode::NORMAL)
-    end
   end
 
   def spawn_enemy
