@@ -1,22 +1,22 @@
-= glgames: squeeze =
+# glgames: squeeze
 
 * squeeze - squeeze game
 * Copyright (C) 2009-2016 by Michael Nagel
 
-= screenshot =
+# screenshot
 
 ![squeeze screenshot](/website/squeeze-screenshot.png?raw=true "squeeze screenshot")
 
-= Installation (on ubuntu) =
+# Installation (on ubuntu)
 
-== Ubuntu ==
+## Ubuntu
 
 ```
 sudo apt install ruby ruby-sdl ruby-dev
 gem install --user-install opengl glu
 ```
 
-== Fedora ==
+## Fedora
 
 run in root terminal:
 
@@ -30,20 +30,20 @@ gem install rubysdl ruby-opengl
 yum install bitstream-vera-fonts
 ```
 
-= Starting the Game =
+# Starting the Game
 
 * open the folder where you extracted the archive
 * double-click 'squeeze' to run the game
 * resolution and fullscreen mode can be configured in the startup script
 
-= Playing the Game =
+# Playing the Game
 
-== Target ==
+## Target
 
 * Your target in each level is to fill the screen with bubbles.
 * Do not spawn a bubble within another bubble.
 
-== Hints ==
+## Hints
 
 * You need to score 100 points in each level to proceed.
 * If you cause a crash, the limit is raised.
@@ -51,13 +51,13 @@ yum install bitstream-vera-fonts
 * Press ENTER when you cannot place any more bubbles.
 * It is OK to collide while inflating a bubble. You must spawn at a valid position, though.
 
-== Controls ==
+## Controls
 
 * click&hold left mouse: inflate a bubble.
 * release left mouse: spawn a bubble.
 * enter: restart game.
 
 
-== Feedback ==
+## Feedback
 
 Use https://github.com/mnagel/squeeze
