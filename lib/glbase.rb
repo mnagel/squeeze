@@ -84,6 +84,7 @@ V = Math::V2
 
 silently do require 'sdl' end
 require 'opengl'
+require 'glu'
 require 'logger'
 
 # TODO check if 0..1 or 0..255 scaled...
@@ -337,7 +338,7 @@ class Rect < OpenGL2D
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR);
       GL::TexParameterf(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR);
 
-      GL::Begin(GL_QUADS);
+      GL::Begin(GL::GL_QUADS);
       GL.Color(@colors.as_a[0].as_a);
       GL.TexCoord2d(0, @texture.content_rect.y);
       GL.Vertex3d(-1, +1, 0)
