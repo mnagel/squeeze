@@ -1,13 +1,13 @@
-# glgames: squeeze
+# Squeeze
 
-* squeeze - squeeze game
+* The Squeeze game
 * Copyright (C) 2009-2016 by Michael Nagel
 
-# screenshot
+# Screenshot
 
 ![squeeze screenshot](/website/squeeze-screenshot.png?raw=true "squeeze screenshot")
 
-# Installation (on ubuntu)
+# Installation
 
 ## Ubuntu
 
