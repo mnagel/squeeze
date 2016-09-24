@@ -12,7 +12,7 @@
 ## Ubuntu
 
 ```
-sudo apt install ruby ruby-sdl ruby-dev
+sudo apt install ruby ruby-sdl ruby-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev ttf-bitstream-vera
 gem install --user-install opengl glu
 ```
 
